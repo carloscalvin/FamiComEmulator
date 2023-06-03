@@ -1,4 +1,6 @@
-﻿namespace FamiComEmulator.Components
+﻿using static FamiComEmulator.Components.ICpu6502;
+
+namespace FamiComEmulator.Components
 {
     internal class Cpu6502 : ICpu6502
     {
@@ -12,14 +14,12 @@
 
         public short ProgramCounter { get; set; }
 
+        public Flags6502 Status { get; set; }
+
         public byte[,] Instructions { get; set; } = new byte[16, 16];
 
-        public struct StatusRegister
-        {
-            public bool Z;
-            public bool C;
-            public bool I;
-        }
+
+        private CentralBus _bus;
 
         public void AddCentralBus(CentralBus bus)
         {
@@ -36,6 +36,17 @@
             return _bus.Read(address);
         }
 
-        private CentralBus _bus;
+        private int GetFlag(Flags6502 flag)
+        {
+            return Status.HasFlag(flag) ? 1 : 0;
+        }
+
+        void SetFlag(Flags6502 flag, bool overflow)
+        {
+            if (overflow)
+                Status |= flag;
+            else
+                Status &= ~flag;
+        }
     }
 }
