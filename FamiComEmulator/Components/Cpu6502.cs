@@ -749,177 +749,392 @@ namespace FamiComEmulator.Components
 
         private byte ROL()
         {
+            Fetch();
+            ushort temp = (ushort)((_fetchedData << 1) | (GetFlag(Flags6502.CarryBit)));
+            SetFlag(Flags6502.CarryBit, (temp & 0xFF00) != 0);
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0);
+            SetFlag(Flags6502.Negative, (temp & 0x0080) != 0);
+
+            if (GetInstructionByPosition(_opcode).AddressingMode == IMP)
+                Accumulator = (byte)(temp & 0x00FF);
+            else
+                Write(_address_abs, (byte)(temp & 0x00FF));
+
             return 0;
         }
 
         private byte BIT()
         {
+            Fetch();
+            var temp = Accumulator & _fetchedData;
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0x00);
+            SetFlag(Flags6502.Negative, (_fetchedData & (1 << 7)) != 0);
+            SetFlag(Flags6502.Overflow, (_fetchedData & (1 << 6)) != 0);
+
             return 0;
         }
 
         private byte AND()
         {
-            return 0;
+            Fetch();
+            Accumulator &= _fetchedData;
+            SetFlag(Flags6502.Zero, Accumulator == 0);
+            SetFlag(Flags6502.Negative, (Accumulator & 0x80) != 0);
+
+            return 1;
         }
 
         private byte BPL()
         {
+            if (GetFlag(Flags6502.Negative) == 0)
+            {
+                _cycles++;
+                _address_abs = (ushort)(ProgramCounter + _address_rel);
+
+                if ((_address_abs & 0xFF00) != (ProgramCounter & 0xFF00))
+                    _cycles++;
+
+                ProgramCounter = _address_abs;
+            }
+
             return 0;
         }
 
         private byte JSR()
         {
+            ProgramCounter--;
+
+            Write((ushort)(0x0100 + StackPointer), (byte)((ProgramCounter >> 8) & 0x00FF));
+            StackPointer--;
+
+            Write((ushort)(0x0100 + StackPointer), (byte)(ProgramCounter & 0x00FF));
+            StackPointer--;
+
+            ProgramCounter = _address_abs;
+
             return 0;
         }
 
         private byte CLC()
         {
+            SetFlag(Flags6502.CarryBit, false);
+
             return 0;
         }
 
         private byte PHP()
         {
+            Write((ushort)(0x0100 + StackPointer), (byte)(Status | Flags6502.Break | Flags6502.Unused));
+            SetFlag(Flags6502.Break, false);
+            SetFlag(Flags6502.Unused, false);
+            StackPointer--;
+
             return 0;
         }
 
         private byte TYA()
         {
+            Accumulator = YRegister;
+            SetFlag(Flags6502.Zero, Accumulator == 0x00);
+            SetFlag(Flags6502.Negative, (Accumulator & 0x80) != 0);
+
             return 0;
         }
 
         private byte TXS()
         {
+            StackPointer = XRegister;
+
             return 0;
         }
 
         private byte STA()
         {
+            Write(_address_abs, Accumulator);
+
             return 0;
         }
 
         private byte TAY()
         {
+            YRegister = Accumulator;
+            SetFlag(Flags6502.Zero, YRegister == 0);
+            SetFlag(Flags6502.Negative, (YRegister & 0x80) != 0);
+
             return 0;
         }
 
         private byte TAX()
         {
+            XRegister = Accumulator;
+            SetFlag(Flags6502.Zero, XRegister == 0);
+            SetFlag(Flags6502.Negative, (XRegister & 0x80) != 0);
+
             return 0;
         }
 
         private byte BCS()
         {
+            if (GetFlag(Flags6502.CarryBit) == 1)
+            {
+                _cycles++;
+                _address_abs = (ushort)(ProgramCounter + _address_rel);
+
+                if ((_address_abs & 0xFF00) != (ProgramCounter & 0xFF00))
+                    _cycles++;
+
+                ProgramCounter = _address_abs;
+            }
+
             return 0;
         }
 
         private byte CLV()
         {
+            SetFlag(Flags6502.Overflow, false);
+
             return 0;
         }
 
         private byte TSX()
         {
+            XRegister = StackPointer;
+            SetFlag(Flags6502.Zero, XRegister == 0);
+            SetFlag(Flags6502.Negative, (XRegister & 0x80) != 0);
+
             return 0;
         }
 
         private byte LDA()
         {
+            Fetch();
+            Accumulator = _fetchedData;
+            SetFlag(Flags6502.Zero, Accumulator == 0);
+            SetFlag(Flags6502.Negative, (Accumulator & 0x80) != 0);
+
             return 0;
         }
 
         private byte LSR()
         {
+            Fetch();
+            ushort temp = (ushort)(_fetchedData >> 1);
+            SetFlag(Flags6502.CarryBit, (_fetchedData & 0x01) != 0);
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0);
+            SetFlag(Flags6502.Negative, (temp & 0x0080) != 0);
+
+            if (GetInstructionByPosition(_opcode).AddressingMode == IMP)
+                Accumulator = (byte)(temp & 0x00FF);
+            else
+                Write(_address_abs, (byte)(temp & 0x00FF));
+
             return 0;
         }
 
         private byte ASL()
         {
+            Fetch();
+            ushort temp = (ushort)(_fetchedData << 1);
+            SetFlag(Flags6502.CarryBit, (temp & 0xFF00) > 0);
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0);
+            SetFlag(Flags6502.Negative, (temp & 0x0080) != 0);
+
+            if (GetInstructionByPosition(_opcode).AddressingMode == IMP)
+                Accumulator = (byte)(temp & 0x00FF);
+            else
+                Write(_address_abs, (byte)(temp & 0x00FF));
+
             return 0;
         }
 
         private byte LDX()
         {
-            return 0;
+            Fetch();
+            XRegister = _fetchedData;
+            SetFlag(Flags6502.Zero, XRegister == 0);
+            SetFlag(Flags6502.Negative, (XRegister & 0x80) != 0);
+
+            return 1;
         }
 
         private byte INY()
         {
+            YRegister++;
+            SetFlag(Flags6502.Zero, YRegister == 0);
+            SetFlag(Flags6502.Negative, (YRegister & 0x80) != 0);
+
             return 0;
         }
 
         private byte DEX()
         {
+            XRegister--;
+            SetFlag(Flags6502.Zero, XRegister == 0);
+            SetFlag(Flags6502.Negative, (XRegister & 0x80) != 0);
+
             return 0;
         }
 
         private byte CPY()
         {
+            Fetch();
+            int temp = YRegister - _fetchedData;
+            SetFlag(Flags6502.CarryBit, YRegister >= _fetchedData);
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0);
+            SetFlag(Flags6502.Negative, (temp & 0x0080) != 0);
+
             return 0;
         }
 
         private byte CLD()
         {
+            SetFlag(Flags6502.DecimalMode, false);
+
             return 0;
         }
 
         private byte BNE()
         {
+            if (GetFlag(Flags6502.Zero) == 0)
+            {
+                _cycles++;
+                _address_abs = (ushort)(ProgramCounter + _address_rel);
+
+                if ((_address_abs & 0xFF00) != (ProgramCounter & 0xFF00))
+                    _cycles++;
+
+                ProgramCounter = _address_abs;
+            }
+
             return 0;
         }
 
         private byte DEC()
         {
+            Fetch();
+            ushort temp = (ushort)(_fetchedData - 1);
+            Write(_address_abs, (byte)(temp & 0x00FF));
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0);
+            SetFlag(Flags6502.Negative, (temp & 0x0080) != 0);
+
             return 0;
         }
 
         private byte INX()
         {
+            XRegister++;
+            SetFlag(Flags6502.Zero, XRegister == 0);
+            SetFlag(Flags6502.Negative, (XRegister & 0x80) != 0);
+
             return 0;
         }
 
         private byte CMP()
         {
-            return 0;
+            Fetch();
+            var temp = Accumulator - _fetchedData;
+            SetFlag(Flags6502.CarryBit, Accumulator >= _fetchedData);
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0x0000);
+            SetFlag(Flags6502.Negative, (temp & 0x80) != 0);
+
+            return 1;
         }
 
         private byte CPX()
         {
+            Fetch();
+            var temp = XRegister - _fetchedData;
+            SetFlag(Flags6502.CarryBit, XRegister >= _fetchedData);
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0x0000);
+            SetFlag(Flags6502.Negative, (temp & 0x80) != 0);
+
             return 0;
         }
 
         private byte SED()
         {
+            SetFlag(Flags6502.DecimalMode, true);
+
             return 0;
         }
 
         private byte BEQ()
         {
+            if (GetFlag(Flags6502.Zero) == 1)
+            {
+                _cycles++;
+                _address_abs = (ushort)(ProgramCounter + _address_rel);
+
+                if ((_address_abs & 0xFF00) != (ProgramCounter & 0xFF00))
+                    _cycles++;
+
+                ProgramCounter = _address_abs;
+            }
+
             return 0;
         }
 
         private byte NOP()
         {
+            switch (_opcode)
+            {
+                case 0x1C:
+                case 0x3C:
+                case 0x5C:
+                case 0x7C:
+                case 0xDC:
+                case 0xFC:
+                    return 1;
+            }
+
             return 0;
         }
 
         private byte INC()
         {
+            Fetch();
+            var temp = (byte)(_fetchedData + 1);
+            Write(_address_abs, (byte)(temp & 0x00FF));
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0x0000);
+            SetFlag(Flags6502.Negative, (temp & 0x0080) != 0);
+
             return 0;
         }
 
         private byte SBC()
         {
-            return 0;
+            Fetch();
+            int value = _fetchedData ^ 0xFF;
+            int sum = Accumulator + value + (GetFlag(Flags6502.CarryBit));
+
+            SetFlag(Flags6502.CarryBit, (sum & 0xFF00) != 0);
+            SetFlag(Flags6502.Zero, (sum & 0x00FF) == 0);
+            SetFlag(Flags6502.Overflow, ((sum ^ Accumulator) & (sum ^ value) & 0x0080) != 0);
+            SetFlag(Flags6502.Negative, (sum & 0x0080) != 0);
+
+            Accumulator = (byte)(sum & 0x00FF);
+
+            return 1;
         }
 
         private byte LDY()
         {
-            return 0;
+            Fetch();
+            YRegister = _fetchedData;
+            SetFlag(Flags6502.Zero, YRegister == 0);
+            SetFlag(Flags6502.Negative, (YRegister & 0x80) != 0);
+
+            return 1;
         }
 
         private byte ORA()
         {
-            return 0;
+            Fetch();
+            Accumulator |= _fetchedData;
+            SetFlag(Flags6502.Zero, Accumulator == 0);
+            SetFlag(Flags6502.Negative, (Accumulator & 0x80) != 0);
+
+            return 1;
         }
 
         private byte UndefinedOperation()
