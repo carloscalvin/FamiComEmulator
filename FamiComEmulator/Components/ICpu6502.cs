@@ -27,6 +27,14 @@
             Negative = (1 << 7),
         };
 
+        void Reset();
+
+        void Irq(); 
+
+        void Nmi();
+
+        void Clock();
+
         void AddCentralBus(CentralBus bus);
 
         void Write(ushort address, byte data);

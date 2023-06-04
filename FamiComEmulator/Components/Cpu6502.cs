@@ -304,6 +304,93 @@ namespace FamiComEmulator.Components
 
         #region public methods
 
+        public void Reset()
+        {
+            _address_abs = 0xFFFC;
+            ushort lo = Read((ushort)(_address_abs + 0));
+            ushort hi = Read((ushort)(_address_abs + 1));
+
+            ProgramCounter = (ushort)((hi << 8) | lo);
+
+            Accumulator = 0;
+            XRegister = 0;
+            YRegister = 0;
+            StackPointer = 0xFD;
+            Status = Flags6502.Unused;
+
+            _address_rel = 0x0000;
+            _address_abs = 0x0000;
+            _fetchedData = 0x00;
+            _cycles = 8;
+        }
+
+        public void Irq()
+        {
+            if (GetFlag(Flags6502.DisableInterrupts) == 0)
+            {
+                Write((ushort)(0x0100 + StackPointer), (byte)((ProgramCounter >> 8) & 0x00FF));
+                StackPointer--;
+                Write((ushort)(0x0100 + StackPointer), (byte)(ProgramCounter & 0x00FF));
+                StackPointer--;
+
+                SetFlag(Flags6502.Break, false);
+                SetFlag(Flags6502.Unused, true);
+                SetFlag(Flags6502.DisableInterrupts, true);
+                Write((ushort)(0x0100 + StackPointer), (byte)Status);
+                StackPointer--;
+
+                _address_abs = 0xFFFE;
+                ushort lo = Read((ushort)(_address_abs + 0));
+                ushort hi = Read((ushort)(_address_abs + 1));
+
+                ProgramCounter = (ushort)((hi << 8) | lo);
+
+                SetFlag(Flags6502.DisableInterrupts, true);
+
+                _cycles = 7;
+            }
+        }
+
+        public void Nmi()
+        {
+            Write((ushort)(0x0100 + StackPointer), (byte)((ProgramCounter >> 8) & 0x00FF));
+            StackPointer--;
+            Write((ushort)(0x0100 + StackPointer), (byte)(ProgramCounter & 0x00FF));
+            StackPointer--;
+
+            SetFlag(Flags6502.Break, false);
+            SetFlag(Flags6502.Unused, true);
+            SetFlag(Flags6502.DisableInterrupts, true);
+            Write((ushort)(0x0100 + StackPointer), (byte)Status);
+            StackPointer--;
+
+            _address_abs = 0xFFFA;
+            ushort lo = Read((ushort)(_address_abs + 0));
+            ushort hi = Read((ushort)(_address_abs + 1));
+
+            ProgramCounter = (ushort)((hi << 8) | lo);
+
+            _cycles = 8;
+        }
+
+        public void Clock()
+        {
+            if (_cycles == 0)
+            {
+                SetFlag(Flags6502.Unused, true);
+                _opcode = Read(ProgramCounter);
+                ProgramCounter++;
+                var instruction = GetInstructionByPosition(_opcode);
+                _cycles = instruction.Cycles;
+                byte additional_cycle1 = instruction.AddressingMode();
+                byte additional_cycle2 = instruction.OperationCode();
+                _cycles += (byte)(additional_cycle1 & additional_cycle2);
+                SetFlag(Flags6502.Unused, true);
+            }
+
+            _cycles--;
+        }
+
         public void AddCentralBus(CentralBus bus)
         {
             _bus = bus;
