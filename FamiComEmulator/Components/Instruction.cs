@@ -10,7 +10,7 @@
 
         public AddressingModeDelegate AddressingMode { get; set; }
 
-        public OpcodeDelegate Opcode { get; set; }
+        public OpcodeDelegate OperationCode { get; set; }
 
         public int Cycles { get; set; }
     }
