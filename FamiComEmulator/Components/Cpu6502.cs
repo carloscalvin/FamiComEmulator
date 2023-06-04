@@ -1,4 +1,5 @@
-﻿using static FamiComEmulator.Components.ICpu6502;
+﻿using System;
+using static FamiComEmulator.Components.ICpu6502;
 
 namespace FamiComEmulator.Components
 {
@@ -490,8 +491,29 @@ namespace FamiComEmulator.Components
 
         private byte BRK()
         {
+            ProgramCounter++;
+
+            SetFlag(Flags6502.DisableInterrupts, true);
+
+            // Guardar el contador de programa en la pila (byte alto primero, luego byte bajo)
+            Write((ushort)(0x0100 + StackPointer), (byte)((ProgramCounter >> 8) & 0x00FF));
+            StackPointer--;
+            Write((ushort)(0x0100 + StackPointer), (byte)(ProgramCounter & 0x00FF));
+            StackPointer--;
+
+            // Guardar el estado de las banderas en la pila
+            SetFlag(Flags6502.Break, true);
+            Write((ushort)(0x0100 + StackPointer), (byte)Status);
+            StackPointer--;
+
+            SetFlag(Flags6502.Break, false);
+
+            // Cargar la dirección de interrupción desde la memoria
+            ProgramCounter = (ushort)(Read(0xFFFE) | Read(0xFFFF) << 8);
+
             return 0;
         }
+
         private byte SEC()
         {
             return 0;
