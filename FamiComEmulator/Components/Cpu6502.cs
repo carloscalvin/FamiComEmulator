@@ -30,6 +30,8 @@ namespace FamiComEmulator.Components
 
         private ushort _address_rel = 0x0000;
 
+        private int _cycles = 0;
+
         #endregion
 
         #region constructor
@@ -486,7 +488,7 @@ namespace FamiComEmulator.Components
 
         #endregion
 
-        #region operation codes
+        #region operation instructions
 
         private byte BRK()
         {
@@ -535,16 +537,32 @@ namespace FamiComEmulator.Components
 
         private byte PHA()
         {
+            Write((ushort)(0x0100 + StackPointer), Accumulator);
+            StackPointer--;
+
             return 0;
         }
 
         private byte CLI()
         {
+            SetFlag(Flags6502.DisableInterrupts, false);
+
             return 0;
         }
 
         private byte BVC()
         {
+            if (GetFlag(Flags6502.Overflow) == 0)
+            {
+                _cycles++;
+                _address_abs = (ushort)(ProgramCounter + _address_rel);
+
+                if ((_address_abs & 0xFF00) != (ProgramCounter & 0xFF00))
+                    _cycles++;
+
+                ProgramCounter = _address_abs;
+            }
+
             return 0;
         }
 
