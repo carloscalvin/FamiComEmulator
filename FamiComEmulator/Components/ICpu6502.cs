@@ -4,7 +4,7 @@
     {
         byte Accumulator { get; set; }
 
-        short ProgramCounter { get; set; }
+        ushort ProgramCounter { get; set; }
 
         byte StackPointer { get; set; }
 
@@ -29,8 +29,8 @@
 
         void AddCentralBus(CentralBus bus);
 
-        void Write(short address, byte data);
+        void Write(ushort address, byte data);
 
-        byte Read(short address);
+        byte Read(ushort address);
     }
 }

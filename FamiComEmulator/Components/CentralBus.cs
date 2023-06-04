@@ -11,12 +11,12 @@
 
         public Ram Ram { get; set; } = new Ram();
 
-        public byte Read(short address)
+        public byte Read(ushort address)
         {
             return Ram.Memory[address];
         }
 
-        public void Write(short address, byte data)
+        public void Write(ushort address, byte data)
         {
             Ram.Memory[address] = data;
         }
