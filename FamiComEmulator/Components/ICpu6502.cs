@@ -27,6 +27,8 @@
             Negative = (1 << 7),
         };
 
+        int GetFlag(Flags6502 flag);
+
         void Reset();
 
         void Irq(); 
@@ -40,5 +42,7 @@
         void Write(ushort address, byte data);
 
         byte Read(ushort address);
+
+        bool Finish();
     }
 }

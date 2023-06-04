@@ -305,6 +305,11 @@ namespace FamiComEmulator.Components
 
         #region public methods
 
+        public int GetFlag(Flags6502 flag)
+        {
+            return Status.HasFlag(flag) ? 1 : 0;
+        }
+
         public void Reset()
         {
             _address_abs = 0xFFFC;
@@ -407,14 +412,14 @@ namespace FamiComEmulator.Components
             return _bus.Read(address);
         }
 
+        public bool Finish()
+        {
+            return _cycles == 0;
+        }
+
         #endregion
 
         #region private methods
-
-        private int GetFlag(Flags6502 flag)
-        {
-            return Status.HasFlag(flag) ? 1 : 0;
-        }
 
         private void SetFlag(Flags6502 flag, bool overflow)
         {
