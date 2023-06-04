@@ -592,71 +592,158 @@ namespace FamiComEmulator.Components
 
         private byte RTS()
         {
+            StackPointer++;
+            ProgramCounter = Read((ushort)(0x0100 + StackPointer));
+            StackPointer++;
+            ProgramCounter |= (ushort)(Read((ushort)(0x0100 + StackPointer)) << 8);
+
+            ProgramCounter++;
+
             return 0;
         }
 
         private byte PLA()
         {
+            StackPointer++;
+            Accumulator = Read((ushort)(0x0100 + StackPointer));
+            SetFlag(Flags6502.Zero, Accumulator == 0);
+            SetFlag(Flags6502.Negative, (Accumulator & 0x80) != 0);
+
             return 0;
         }
 
         private byte SEI()
         {
+            SetFlag(Flags6502.DisableInterrupts, true);
+
             return 0;
         }
 
         private byte BMI()
         {
+            if (GetFlag(Flags6502.Negative) == 1)
+            {
+                _cycles++;
+                _address_abs = (ushort)(ProgramCounter + _address_rel);
+
+                if ((_address_abs & 0xFF00) != (ProgramCounter & 0xFF00))
+                    _cycles++;
+
+                ProgramCounter = _address_abs;
+            }
+
             return 0;
         }
 
         private byte PLP()
         {
+            StackPointer++;
+            Status = (Flags6502)Read((ushort)(0x0100 + StackPointer));
+            SetFlag(Flags6502.Unused, true);
+
             return 0;
         }
 
         private byte JMP()
         {
+            ProgramCounter = _address_abs;
+
             return 0;
         }
 
         private byte BVS()
         {
+            if (GetFlag(Flags6502.Overflow) == 1)
+            {
+                _cycles++;
+                _address_abs = (ushort)(ProgramCounter + _address_rel);
+
+                if ((_address_abs & 0xFF00) != (ProgramCounter & 0xFF00))
+                    _cycles++;
+
+                ProgramCounter = _address_abs;
+            }
+
             return 0;
         }
 
         private byte ADC()
         {
-            return 0;
+            Fetch();
+            var temp = Accumulator + _fetchedData + (ushort)(GetFlag(Flags6502.CarryBit));
+            SetFlag(Flags6502.CarryBit, temp > 255);
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0);
+            SetFlag(Flags6502.Overflow, (~(Accumulator ^ _fetchedData) & (Accumulator ^ (ushort)temp) & 0x0080) != 0);
+            SetFlag(Flags6502.Negative, (temp & 0x80) != 0);
+
+            Accumulator = (byte)(temp & 0x00FF);
+
+            return 1;
         }
 
         private byte ROR()
         {
+            Fetch();
+            ushort temp = (ushort)((ushort)(GetFlag(Flags6502.CarryBit) << 7) | (_fetchedData >> 1));
+            SetFlag(Flags6502.CarryBit, (_fetchedData & 0x01) != 0);
+            SetFlag(Flags6502.Zero, (temp & 0x00FF) == 0);
+            SetFlag(Flags6502.Negative, (temp & 0x0080) != 0);
+
+            if (GetInstructionByPosition(_opcode).AddressingMode == IMP)
+                Accumulator = (byte)(temp & 0x00FF);
+            else
+                Write(_address_abs, (byte)(temp & 0x00FF));
+
             return 0;
         }
 
         private byte DEY()
         {
+            YRegister--;
+
+            SetFlag(Flags6502.Zero, YRegister == 0);
+            SetFlag(Flags6502.Negative, (YRegister & 0x80) != 0);
+
             return 0;
         }
 
         private byte TXA()
         {
+            Accumulator = XRegister;
+
+            SetFlag(Flags6502.Zero, Accumulator == 0);
+            SetFlag(Flags6502.Negative, (Accumulator & 0x80) != 0);
+
             return 0;
         }
 
         private byte BCC()
         {
+            if (GetFlag(Flags6502.CarryBit) == 0)
+            {
+                _cycles++;
+                _address_abs = (ushort)(ProgramCounter + _address_rel);
+
+                if ((_address_abs & 0xFF00) != (ProgramCounter & 0xFF00))
+                    _cycles++;
+
+                ProgramCounter = _address_abs;
+            }
+
             return 0;
         }
 
         private byte STY()
         {
+            Write(_address_abs, YRegister);
+
             return 0;
         }
 
         private byte STX()
         {
+            Write(_address_abs, XRegister);
+
             return 0;
         }
 
