@@ -1,8 +1,8 @@
 ﻿namespace FamiComEmulator.Components
 {
-    internal interface ICentralBus
+    public interface ICentralBus
     {
-        Cpu6502 Cpu { get; set; }
+        ICpu6502 Cpu { get; set; }
 
         Ram Ram { get; set; }
 

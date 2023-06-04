@@ -2,7 +2,7 @@
 
 namespace FamiComEmulator.Components
 {
-    internal class Cpu6502 : ICpu6502
+    public class Cpu6502 : ICpu6502
     {
         #region public properties
 
@@ -22,9 +22,9 @@ namespace FamiComEmulator.Components
 
         #region private properties
 
-        private Instruction[,] _instructions { get; set; } = new Instruction[16, 16];
+        private Instruction[,] _instructions { get; set; }
 
-        private CentralBus _bus = new CentralBus();
+        private CentralBus _bus { get; set; }
 
         private ushort _address_abs = 0x0000;
 
@@ -42,6 +42,7 @@ namespace FamiComEmulator.Components
 
         public Cpu6502()
         {
+             _instructions = new Instruction[16, 16];
             _instructions[0, 0] = new Instruction { Name = "BRK", OperationCode = BRK, AddressingMode = IMM, Cycles = 7 };
             _instructions[0, 1] = new Instruction { Name = "ORA", OperationCode = ORA, AddressingMode = IZX, Cycles = 6 };
             _instructions[0, 2] = new Instruction { Name = "UNDEFINED", OperationCode = UndefinedOperation, AddressingMode = IMP, Cycles = 2 };

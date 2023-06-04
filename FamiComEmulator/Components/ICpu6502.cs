@@ -1,6 +1,6 @@
 ﻿namespace FamiComEmulator.Components
 {
-    internal interface ICpu6502
+    public interface ICpu6502
     {
         byte Accumulator { get; set; }
 

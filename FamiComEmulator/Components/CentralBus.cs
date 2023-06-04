@@ -1,15 +1,17 @@
 ﻿namespace FamiComEmulator.Components
 {
-    internal class CentralBus : ICentralBus
+    public class CentralBus : ICentralBus
     {
-        public CentralBus()
+        public CentralBus(ICpu6502 cpu)
         {
+            Cpu = cpu;
+            Ram = new Ram();
             Cpu.AddCentralBus(this);
         }
 
-        public Cpu6502 Cpu { get; set; } = new Cpu6502();
+        public ICpu6502 Cpu { get; set; }
 
-        public Ram Ram { get; set; } = new Ram();
+        public Ram Ram { get; set; }
 
         public byte Read(ushort address)
         {
