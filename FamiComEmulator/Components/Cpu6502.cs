@@ -32,6 +32,10 @@ namespace FamiComEmulator.Components
 
         private int _cycles = 0;
 
+        private byte _fetchedData = 0x00;
+
+        private byte _opcode = 0x00;
+
         #endregion
 
         #region constructor
@@ -332,8 +336,18 @@ namespace FamiComEmulator.Components
                 Status &= ~flag;
         }
 
-        private Instruction GetInstructionByPosition(int row, int column)
+        private void Fetch()
         {
+            var instruction = GetInstructionByPosition(_opcode);
+            if (instruction.AddressingMode != IMP)
+                _fetchedData = Read(_address_abs);
+        }
+
+        private Instruction GetInstructionByPosition(byte opcode)
+        {
+            var row = (opcode & 0xF0) >> 4;
+            var column = opcode & 0x0F;
+
             return _instructions[row, column];
         }
 
@@ -568,7 +582,12 @@ namespace FamiComEmulator.Components
 
         private byte EOR()
         {
-            return 0;
+            Fetch();
+            Accumulator ^= _fetchedData;
+            SetFlag(Flags6502.Zero, Accumulator == 0);
+            SetFlag(Flags6502.Negative, (Accumulator & 0x80) != 0);
+
+            return 1;
         }
 
         private byte RTS()
