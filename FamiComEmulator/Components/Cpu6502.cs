@@ -4,6 +4,8 @@ namespace FamiComEmulator.Components
 {
     internal class Cpu6502 : ICpu6502
     {
+        #region public properties
+
         public byte Accumulator { get; set; }
 
         public byte XRegister { get; set; }
@@ -16,14 +18,30 @@ namespace FamiComEmulator.Components
 
         public Flags6502 Status { get; set; }
 
-        public byte[,] Instructions { get; set; } = new byte[16, 16];
+        #endregion
 
+        #region private properties
 
-        private CentralBus _bus;
+        private Instruction[,] _instructions { get; set; } = new Instruction[16, 16];
+
+        private CentralBus _bus = new CentralBus();
 
         private ushort _address_abs = 0x0000;
 
         private ushort _address_rel = 0x0000;
+
+        #endregion
+
+        #region constructor
+
+        public Cpu6502()
+        {
+            _instructions[0, 0] = new Instruction { Name = "BRK", AddressingMode = IMM, Opcode = BRK, Cycles = 7 };
+        }
+
+        #endregion
+
+        #region public methods
 
         public void AddCentralBus(CentralBus bus)
         {
@@ -40,6 +58,10 @@ namespace FamiComEmulator.Components
             return _bus.Read(address);
         }
 
+        #endregion
+
+        #region private methods
+
         private int GetFlag(Flags6502 flag)
         {
             return Status.HasFlag(flag) ? 1 : 0;
@@ -52,6 +74,15 @@ namespace FamiComEmulator.Components
             else
                 Status &= ~flag;
         }
+
+        private Instruction GetInstructionByPosition(int row, int column)
+        {
+            return _instructions[row, column];
+        }
+
+        #endregion
+
+        #region addressing modes
 
         private byte IMP()
         {
@@ -197,5 +228,16 @@ namespace FamiComEmulator.Components
             else
                 return 0;
         }
+
+        #endregion
+
+        #region opcodes
+
+        private byte BRK()
+        {
+            return 0;
+        }
+
+        #endregion
     }
 }
