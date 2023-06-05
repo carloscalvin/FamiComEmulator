@@ -78,5 +78,78 @@ namespace FamiComEmulator.Tests.Components
             Assert.Equal(0, overflowFlag);
             Assert.Equal(0, negativeFlag);
         }
+
+        [Fact]
+        public void TestMultiplicationProgramExecution()
+        {
+            // Arrange
+            _bus.Write(0xFFFC, 0x00);
+            _bus.Write(0xFFFD, 0x80);
+            _bus.Write(0x8000, 0xA2); // LDX #10
+            _bus.Write(0x8001, 0x0A);
+            _bus.Write(0x8002, 0x8E); // STX $0000
+            _bus.Write(0x8003, 0x00);
+            _bus.Write(0x8004, 0x00);
+            _bus.Write(0x8005, 0xA2); // LDX #3
+            _bus.Write(0x8006, 0x03);
+            _bus.Write(0x8007, 0x8E); // STX $0001
+            _bus.Write(0x8008, 0x01);
+            _bus.Write(0x8009, 0x00);
+            _bus.Write(0x800A, 0xAC); // LDY $0000
+            _bus.Write(0x800B, 0x00);
+            _bus.Write(0x800C, 0x00);
+            _bus.Write(0x800D, 0xA9); // LDA #0
+            _bus.Write(0x800E, 0x00);
+            _bus.Write(0x800F, 0x18); // CLC
+            _bus.Write(0x8010, 0x6D); // ADC $0001
+            _bus.Write(0x8011, 0x01);
+            _bus.Write(0x8012, 0x00);
+            _bus.Write(0x8013, 0x88); // DEY
+            _bus.Write(0x8014, 0xD0); // BNE loop
+            _bus.Write(0x8015, 0xFA);
+            _bus.Write(0x8016, 0x8D); // STA $0002
+            _bus.Write(0x8017, 0x02);
+            _bus.Write(0x8018, 0x00);
+            _bus.Write(0x8019, 0xEA); // NOP
+            _bus.Write(0x801A, 0xEA); // NOP
+            _bus.Write(0x801B, 0xEA); // NOP
+
+            _bus.Cpu.Reset();
+            while (!_bus.Cpu.Finish())
+            {
+                _bus.Cpu.Clock();
+            }
+
+            // Act
+            for (int i = 0; i < 112; i++)
+            {
+                _bus.Cpu.Clock();
+            }
+
+            // Assert
+            int xRegister = _bus.Cpu.XRegister;
+            int yRegister = _bus.Cpu.YRegister;
+            int accumulator = _bus.Cpu.Accumulator;
+            int carryFlag = _bus.Cpu.GetFlag(Flags6502.CarryBit);
+            int zeroFlag = _bus.Cpu.GetFlag(Flags6502.Zero);
+            int overflowFlag = _bus.Cpu.GetFlag(Flags6502.Overflow);
+            int negativeFlag = _bus.Cpu.GetFlag(Flags6502.Negative);
+
+            Assert.Equal(3, xRegister);
+            Assert.Equal(0, yRegister);
+            Assert.Equal(30, accumulator);
+            Assert.Equal(0, carryFlag);
+            Assert.Equal(1, zeroFlag);
+            Assert.Equal(0, overflowFlag);
+            Assert.Equal(0, negativeFlag);
+
+            int multiplying = _bus.Read(0x0000);
+            int multiplier = _bus.Read(0x0001);
+            int product = _bus.Read(0x0002);
+
+            Assert.Equal(10, multiplying);
+            Assert.Equal(3, multiplier);
+            Assert.Equal(30, product);
+        }
     }
 }
