@@ -24,16 +24,16 @@ namespace FamiComEmulator.Tests.Components
             _bus.Write(0x2000, 0xA9); // LDA immediate
             _bus.Write(0x2001, 0x42); // Value to load into Accumulator
 
-            _bus.Cpu.Reset();
+            _bus.Reset();
             while (!_bus.Cpu.Finish())
             {
-                _bus.Cpu.Clock();
+                _bus.Clock();
             }
 
             // Act
             for (int i = 0; i < 2; i++)
             {
-                _bus.Cpu.Clock();
+                _bus.Clock();
             }
 
             // Assert
@@ -54,16 +54,16 @@ namespace FamiComEmulator.Tests.Components
             _bus.Write(0x2002, 0x69); // ADC immediate
             _bus.Write(0x2003, 0x05); // Value to add to Accumulator
 
-            _bus.Cpu.Reset();
+            _bus.Reset();
             while (!_bus.Cpu.Finish())
             {
-                _bus.Cpu.Clock();
+                _bus.Clock();
             }
 
             // Act
             for (int i = 0; i < 4; i++)
             {
-                _bus.Cpu.Clock();
+                _bus.Clock();
             }
 
             // Assert
@@ -114,16 +114,16 @@ namespace FamiComEmulator.Tests.Components
             _bus.Write(0x801A, 0xEA); // NOP
             _bus.Write(0x801B, 0xEA); // NOP
 
-            _bus.Cpu.Reset();
+            _bus.Reset();
             while (!_bus.Cpu.Finish())
             {
-                _bus.Cpu.Clock();
+                _bus.Clock();
             }
 
             // Act
             for (int i = 0; i < 112; i++)
             {
-                _bus.Cpu.Clock();
+                _bus.Clock();
             }
 
             // Assert
@@ -150,6 +150,45 @@ namespace FamiComEmulator.Tests.Components
             Assert.Equal(10, multiplying);
             Assert.Equal(3, multiplier);
             Assert.Equal(30, product);
+        }
+
+        [Fact]
+        public void NesTestRom()
+        {
+            // Arrange
+            ICartridge cartridge = new Cartridge("Components/nestest.nes");
+            _bus.AddCartridge(cartridge);
+            _bus.Write(0xFFFC, 0x00);
+            _bus.Write(0xFFFD, 0xC0);
+
+            _bus.Reset();
+            while (!_bus.Cpu.Finish())
+            {
+                _bus.Clock();
+            }
+
+            // Act
+            for (int i = 0; i < 112; i++)
+            {
+                _bus.Clock();
+            }
+
+            // Assert
+            int xRegister = _bus.Cpu.XRegister;
+            int yRegister = _bus.Cpu.YRegister;
+            int accumulator = _bus.Cpu.Accumulator;
+            int carryFlag = _bus.Cpu.GetFlag(Flags6502.CarryBit);
+            int zeroFlag = _bus.Cpu.GetFlag(Flags6502.Zero);
+            int overflowFlag = _bus.Cpu.GetFlag(Flags6502.Overflow);
+            int negativeFlag = _bus.Cpu.GetFlag(Flags6502.Negative);
+
+            Assert.Equal(3, xRegister);
+            Assert.Equal(0, yRegister);
+            Assert.Equal(30, accumulator);
+            Assert.Equal(0, carryFlag);
+            Assert.Equal(1, zeroFlag);
+            Assert.Equal(0, overflowFlag);
+            Assert.Equal(0, negativeFlag);
         }
     }
 }

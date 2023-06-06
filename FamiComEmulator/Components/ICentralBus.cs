@@ -6,6 +6,8 @@
 
         Ram Ram { get; set; }
 
+        void AddCartridge(ICartridge cartridge);
+
         void Clock();
 
         byte Read(ushort address);
