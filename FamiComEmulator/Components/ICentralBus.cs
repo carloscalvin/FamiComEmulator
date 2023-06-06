@@ -6,8 +6,12 @@
 
         Ram Ram { get; set; }
 
-        void Write(ushort address, byte data);
+        void Clock();
 
         byte Read(ushort address);
+
+        void Reset();
+
+        void Write(ushort address, byte data);
     }
 }
