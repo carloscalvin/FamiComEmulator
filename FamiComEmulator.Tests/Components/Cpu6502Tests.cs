@@ -13,6 +13,7 @@ namespace FamiComEmulator.Tests.Components
         {
             _cpu6502 = new Cpu6502();
             _bus = new CentralBus(_cpu6502);
+            _bus.AddCartridge(new Cartridge("Components/nestest.nes"));
         }
 
         [Fact]
@@ -20,9 +21,9 @@ namespace FamiComEmulator.Tests.Components
         {
             //Arrange
             _bus.Write(0xFFFC, 0x00);
-            _bus.Write(0xFFFD, 0x20);
-            _bus.Write(0x2000, 0xA9); // LDA immediate
-            _bus.Write(0x2001, 0x42); // Value to load into Accumulator
+            _bus.Write(0xFFFD, 0x80);
+            _bus.Write(0x8000, 0xA9); // LDA immediate
+            _bus.Write(0x8001, 0x42); // Value to load into Accumulator
 
             _bus.Reset();
             while (!_bus.Cpu.Finish())
@@ -47,12 +48,12 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             _bus.Write(0xFFFC, 0x00);
-            _bus.Write(0xFFFD, 0x20);
-            _bus.Write(0x2000, 0xA9); // LDA immediate
-            _bus.Write(0x2001, 0x10); // Value to load into Accumulator
+            _bus.Write(0xFFFD, 0x80);
+            _bus.Write(0x8000, 0xA9); // LDA immediate
+            _bus.Write(0x8001, 0x10); // Value to load into Accumulator
 
-            _bus.Write(0x2002, 0x69); // ADC immediate
-            _bus.Write(0x2003, 0x05); // Value to add to Accumulator
+            _bus.Write(0x8002, 0x69); // ADC immediate
+            _bus.Write(0x8003, 0x05); // Value to add to Accumulator
 
             _bus.Reset();
             while (!_bus.Cpu.Finish())
@@ -156,8 +157,6 @@ namespace FamiComEmulator.Tests.Components
         public void NesTestRom()
         {
             // Arrange
-            ICartridge cartridge = new Cartridge("Components/nestest.nes");
-            _bus.AddCartridge(cartridge);
             _bus.Write(0xFFFC, 0x00);
             _bus.Write(0xFFFD, 0xC0);
 
