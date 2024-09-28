@@ -69,7 +69,7 @@ namespace FamiComEmulator.Tests.Components
                 writer.Write(new byte[] { 0x4E, 0x45, 0x53, 0x1A }); // Magic Number "NES\x1A"
                 writer.Write((byte)2); // Number of PRG-ROM banks
                 writer.Write((byte)1); // Number of CHR-ROM banks
-                writer.Write((byte)0x01); // Mapper1 (bit 0 set for Mapper 1)
+                writer.Write((byte)0x10); // Mapper1 (bit 4 set for Mapper 1)
                 writer.Write((byte)0x00); // Mapper2
                 writer.Write((byte)0);    // Number of PRG-RAM
                 writer.Write((byte)0x00); // AdditionalFlags1
