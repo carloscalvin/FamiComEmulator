@@ -2,9 +2,9 @@
 {
     public interface ICentralBus
     {
-        ICpu6502 Cpu { get; set; }
+        ICpu6502 Cpu { get; }
 
-        Ram Ram { get; set; }
+        Ram Ram { get; }
 
         void AddCartridge(ICartridge cartridge);
 
