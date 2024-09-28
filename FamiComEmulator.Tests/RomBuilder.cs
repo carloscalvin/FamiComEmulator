@@ -12,7 +12,7 @@
         /// <param name="prgRomData">Byte array representing the PRG-ROM instructions.</param>
         public static void CreateTestRom(string filePath, byte[] prgRomData)
         {
-            using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(filePath)))
+            using (BinaryWriter writer = new BinaryWriter(File.Create(filePath)))
             {
                 // Write NES Header
                 writer.Write(new byte[] { 0x4E, 0x45, 0x53, 0x1A }); // Magic Number "NES\x1A"
@@ -35,10 +35,11 @@
                     writer.Write(new byte[prgRomSize - prgRomData.Length]);
                 }
 
-                // Set the Reset Vector at the end of PRG-ROM to point to 0x8000
-                // Calculate the offset where to write the reset vector
-                long prgRomEndOffset = 16 + prgRomSize; // 16 bytes header + 16KB PRG-ROM
-                writer.Seek((int)(prgRomEndOffset - 2), SeekOrigin.Begin);
+                // Set the Reset Vector at the correct position (0x3FFC and 0x3FFD within PRG-ROM)
+                // PRG-ROM starts at byte 16 in the file, so 0x3FFC offset is 16380
+                // 16 (header) + 16380 = 16396
+                int resetVectorOffset = 16 + 0x3FFC; // 16 + 16380 = 16396
+                writer.Seek(resetVectorOffset, SeekOrigin.Begin);
                 writer.Write((byte)0x00); // Reset Vector Low Byte
                 writer.Write((byte)0x80); // Reset Vector High Byte
             }

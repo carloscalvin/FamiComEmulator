@@ -39,9 +39,13 @@ namespace FamiComEmulator.Tests.Components
             ICentralBus bus = new CentralBus(cpu6502);
             bus.AddCartridge(new Cartridge(_ldaRomPath));
             bus.Reset();
+            while (!bus.Cpu.Finish())
+            {
+                bus.Clock();
+            }
 
             // Act
-            while (!cpu6502.Finish())
+            for (int i = 0; i < 4; i++)
             {
                 bus.Clock();
             }
@@ -60,9 +64,13 @@ namespace FamiComEmulator.Tests.Components
             ICentralBus bus = new CentralBus(cpu6502);
             bus.AddCartridge(new Cartridge(_adcRomPath));
             bus.Reset();
+            while (!bus.Cpu.Finish())
+            {
+                bus.Clock();
+            }
 
             // Act
-            while (!cpu6502.Finish())
+            for (int i = 0; i < 4; i++)
             {
                 bus.Clock();
             }
