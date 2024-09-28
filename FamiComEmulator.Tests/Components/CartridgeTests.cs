@@ -15,13 +15,7 @@ namespace FamiComEmulator.Tests.Components
             _validRomPath = Path.GetTempFileName();
             _invalidRomPath = Path.GetTempFileName();
             _unsupportedMapperRomPath = Path.GetTempFileName();
-            _realRomPath = Path.Combine("Components", "nestest.nes");
-
-            // Ensure the 'Components' directory exists and 'nestest.nes' is present
-            if (!Directory.Exists("Components"))
-            {
-                Directory.CreateDirectory("Components");
-            }
+            _realRomPath = Path.Combine("TestRoms", "nestest.nes");
 
             if (!File.Exists(_realRomPath))
             {
