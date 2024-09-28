@@ -551,13 +551,16 @@ namespace FamiComEmulator.Components
 
             ushort pointer = (ushort)((highPointer << 8) | lowPointer);
 
-            if (lowPointer == 0x00FF)
+            if (lowPointer == 0xFF)
             {
-                _address_abs = (ushort)(Read((ushort)((pointer & 0xFF00) << 8)) | Read((ushort)(pointer + 0)));
+                // Bug 6502: When low byte is 0xFF, high byte is wrapped within the same page
+                ushort low = Read(pointer);
+                ushort high = Read((ushort)(pointer & 0xFF00));
+                _address_abs = (ushort)((high << 8) | low);
             }
             else
             {
-                _address_abs = (ushort)(Read((ushort)((pointer + 1) << 8)) | Read((ushort)(pointer + 0)));
+                _address_abs = (ushort)(Read((ushort)(pointer + 1)) << 8 | Read(pointer));
             }
 
             return 0;
