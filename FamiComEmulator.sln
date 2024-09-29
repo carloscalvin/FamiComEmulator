@@ -5,7 +5,12 @@ VisualStudioVersion = 17.6.33723.286
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FamiComEmulator", "FamiComEmulator\FamiComEmulator.csproj", "{598E3D53-BA3B-4279-AF7D-32EB94B25323}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FamiComEmulator.Tests", "FamiComEmulator.Tests\FamiComEmulator.Tests.csproj", "{709F9A00-11F2-4FD0-99FF-B3A538E69EA2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FamiComEmulator.Tests", "FamiComEmulator.Tests\FamiComEmulator.Tests.csproj", "{709F9A00-11F2-4FD0-99FF-B3A538E69EA2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{D5CFA44A-1653-4079-9854-4BDC1086EA22}"
+	ProjectSection(SolutionItems) = preProject
+		docs\6502.pdf = docs\6502.pdf
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
