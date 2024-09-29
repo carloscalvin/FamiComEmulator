@@ -11,17 +11,25 @@
         /// Initializes a new instance of the <see cref="CentralBus"/> class with the specified CPU.
         /// </summary>
         /// <param name="cpu">The CPU component to connect to the bus.</param>
-        public CentralBus(ICpu6502 cpu)
+        /// <param name="ppu">The PPU component to connect to the bus.</param>
+        public CentralBus(ICpu6502 cpu, IPpu2c02 ppu)
         {
             Cpu = cpu;
+            Ppu = ppu;
             Ram = new Ram();
             Cpu.AddCentralBus(this);
+            Ppu.AddCentralBus(this);
         }
 
         /// <summary>
         /// Gets the CPU connected to the central bus.
         /// </summary>
         public ICpu6502 Cpu { get; }
+
+        /// <summary>
+        /// Gets the PPU connected to the central bus.
+        /// </summary>
+        public IPpu2c02 Ppu { get; }
 
         /// <summary>
         /// Gets the system RAM connected to the central bus.
@@ -43,6 +51,10 @@
         public void Clock()
         {
             Cpu?.Clock();
+            for (int i = 0; i < 3; i++)
+            {
+                Ppu?.Clock();
+            }
         }
 
         /// <summary>
@@ -53,6 +65,13 @@
         public byte Read(ushort address)
         {
             byte data = 0x00;
+
+            // Handle PPU registers (0x2000 - 0x2007)
+            if (address >= 0x2000 && address <= 0x2007)
+            {
+                data = Ppu.ReadRegister((byte)address);
+                return data;
+            }
 
             // Attempt to read from the cartridge first
             if (_cartridge != null && _cartridge.Read(address, ref data))
@@ -79,6 +98,13 @@
         /// <param name="data">The byte value to write to memory.</param>
         public void Write(ushort address, byte data)
         {
+            // Handle PPU registers (0x2000 - 0x2007)
+            if (address >= 0x2000 && address <= 0x2007)
+            {
+                Ppu.WriteRegister((byte)address, data);
+                return;
+            }
+
             // Attempt to write to the cartridge first
             if (_cartridge != null && _cartridge.Write(address, data))
             {
@@ -101,6 +127,7 @@
         public void Reset()
         {
             Cpu?.Reset();
+            Ppu?.Reset();
         }
     }
 }

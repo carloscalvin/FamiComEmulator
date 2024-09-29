@@ -4,18 +4,18 @@ namespace FamiComEmulator.Tests.TestRoms
 {
     public static class NestestParser
     {
-        public static List<CpuState> ParseLog(string logFilePath)
+        public static List<CpuPpuState> ParseLog(string logFilePath)
         {
-            var cpuStates = new List<CpuState>();
+            var cpuPpuStates = new List<CpuPpuState>();
             var logLines = File.ReadAllLines(logFilePath);
-            var regex = new Regex(@"^(?<Address>[0-9A-F]{4})\s+(?<Opcode>(?:[0-9A-F]{2}\s*){1,3})\s+(?<Instruction>.*?)\s+A:(?<A>[0-9A-F]{2})\s+X:(?<X>[0-9A-F]{2})\s+Y:(?<Y>[0-9A-F]{2})\s+P:(?<P>[0-9A-F]{2})\s+SP:(?<SP>[0-9A-F]{2})\s+PPU:\s*(?<PPUX>\d+),\s*(?<PPUY>\d+)\s+CYC:(?<CYC>\d+)$");
+            var regex = new Regex(@"^(?<Address>[0-9A-F]{4})\s+(?<Opcode>(?:[0-9A-F]{2}\s*){1,3})\s+(?<Instruction>.*?)\s+A:(?<A>[0-9A-F]{2})\s+X:(?<X>[0-9A-F]{2})\s+Y:(?<Y>[0-9A-F]{2})\s+P:(?<P>[0-9A-F]{2})\s+SP:(?<SP>[0-9A-F]{2})\s+PPU:\s*(?<PPUY>\d+),\s*(?<PPUX>\d+)\s+CYC:(?<CYC>\d+)$");
 
             foreach (var line in logLines)
             {
                 var match = regex.Match(line);
                 if (match.Success)
                 {
-                    var state = new CpuState
+                    var state = new CpuPpuState
                     {
                         Address = ushort.Parse(match.Groups["Address"].Value, System.Globalization.NumberStyles.HexNumber),
                         Opcode = match.Groups["Opcode"].Value.Trim(),
@@ -29,11 +29,11 @@ namespace FamiComEmulator.Tests.TestRoms
                         PpuY = int.Parse(match.Groups["PPUY"].Value),
                         Cycle = int.Parse(match.Groups["CYC"].Value)
                     };
-                    cpuStates.Add(state);
+                    cpuPpuStates.Add(state);
                 }
             }
 
-            return cpuStates;
+            return cpuPpuStates;
         }
     }
 }

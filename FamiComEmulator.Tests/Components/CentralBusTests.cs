@@ -5,12 +5,10 @@ namespace FamiComEmulator.Tests.Components
     public class CentralBusTests
     {
         private readonly CentralBus _bus;
-        private readonly ICpu6502 _cpu6502;
 
         public CentralBusTests()
         {
-            _cpu6502 = new Cpu6502();
-            _bus = new CentralBus(_cpu6502);
+            _bus = new CentralBus(new Cpu6502(), new Ppu2c02());
         }
 
         [Fact]

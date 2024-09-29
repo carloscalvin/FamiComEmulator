@@ -1,6 +1,6 @@
 ﻿namespace FamiComEmulator.Tests.TestRoms
 {
-    public class CpuState
+    public class CpuPpuState
     {
         public ushort Address { get; set; }
         public string Opcode { get; set; }

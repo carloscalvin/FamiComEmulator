@@ -42,7 +42,8 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             ICpu6502 cpu6502 = new Cpu6502();
-            ICentralBus bus = new CentralBus(cpu6502);
+            IPpu2c02 ppu = new Ppu2c02();
+            ICentralBus bus = new CentralBus(cpu6502, ppu);
             bus.AddCartridge(new Cartridge(_ldaRomPath));
             bus.Reset();
             while (!bus.Cpu.Finish())
@@ -67,7 +68,8 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             ICpu6502 cpu6502 = new Cpu6502();
-            ICentralBus bus = new CentralBus(cpu6502);
+            IPpu2c02 ppu = new Ppu2c02();
+            ICentralBus bus = new CentralBus(cpu6502, ppu);
             bus.AddCartridge(new Cartridge(_adcRomPath));
             bus.Reset();
             while (!bus.Cpu.Finish())
@@ -94,7 +96,8 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             ICpu6502 cpu6502 = new Cpu6502();
-            ICentralBus bus = new CentralBus(cpu6502);
+            IPpu2c02 ppu = new Ppu2c02();
+            ICentralBus bus = new CentralBus(cpu6502, ppu);
             bus.AddCartridge(new Cartridge(_multiplicationRomPath));
             bus.Reset();
             while (!bus.Cpu.Finish())
@@ -128,17 +131,19 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             ICpu6502 cpu6502 = new Cpu6502();
-            ICentralBus bus = new CentralBus(cpu6502);
+            IPpu2c02 ppu = new Ppu2c02();
+            ICentralBus bus = new CentralBus(cpu6502, ppu);
             bus.AddCartridge(new Cartridge(_nestestRomPath));
 
             // Parse the nestest log
-            List<CpuState> expectedStates = NestestParser.ParseLog(_nestestLogPath);
+            List<CpuPpuState> expectedStates = NestestParser.ParseLog(_nestestLogPath);
 
             // Reset the bus and CPU
             bus.Reset();
 
             // Hardcode the Program Counter to 0xC000 to enter the automated test mode
             cpu6502.ProgramCounter = 0xC000;
+            cpu6502.Cycle = 7;
 
             // Act & Assert
             foreach (var expectedState in expectedStates)
@@ -154,6 +159,7 @@ namespace FamiComEmulator.Tests.Components
                 byte y = cpu6502.YRegister;
                 byte status = (byte)cpu6502.Status;
                 byte sp = cpu6502.StackPointer;
+                int cycle = cpu6502.Cycle;
 
                 Assert.Equal(expectedState.Address, pc);
                 Assert.Equal(expectedState.Accumulator, a);
@@ -161,6 +167,7 @@ namespace FamiComEmulator.Tests.Components
                 Assert.Equal(expectedState.YRegister, y);
                 Assert.Equal(expectedState.Status, status);
                 Assert.Equal(expectedState.StackPointer, sp);
+                Assert.Equal(expectedState.Cycle, cycle);
             }
         }
     }

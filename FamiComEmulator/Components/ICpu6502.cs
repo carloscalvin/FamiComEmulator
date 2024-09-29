@@ -14,6 +14,8 @@
 
         Flags6502 Status { get; set; }
 
+        int Cycle { get; set; }
+
         [Flags]
         enum Flags6502
         {

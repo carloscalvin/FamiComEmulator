@@ -18,6 +18,8 @@ namespace FamiComEmulator.Components
 
         public Flags6502 Status { get; set; }
 
+        public int Cycle { get; set; }
+
         #endregion
 
         #region private properties
@@ -146,7 +148,7 @@ namespace FamiComEmulator.Components
             _instructions[6, 4] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 3 };
             _instructions[6, 5] = new Instruction { Name = "ADC", OperationCode = ADC, AddressingMode = ZP0, Cycles = 3 };
             _instructions[6, 6] = new Instruction { Name = "ROR", OperationCode = ROR, AddressingMode = ZP0, Cycles = 5 };
-            _instructions[6, 7] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = ZP0, Cycles = 6 };
+            _instructions[6, 7] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = ZP0, Cycles = 5 };
             _instructions[6, 8] = new Instruction { Name = "PLA", OperationCode = PLA, AddressingMode = IMP, Cycles = 4 };
             _instructions[6, 9] = new Instruction { Name = "ADC", OperationCode = ADC, AddressingMode = IMM, Cycles = 2 };
             _instructions[6, 10] = new Instruction { Name = "ROR", OperationCode = ROR, AddressingMode = IMP, Cycles = 2 };
@@ -158,7 +160,7 @@ namespace FamiComEmulator.Components
             _instructions[7, 0] = new Instruction { Name = "BVS", OperationCode = BVS, AddressingMode = REL, Cycles = 2 };
             _instructions[7, 1] = new Instruction { Name = "ADC", OperationCode = ADC, AddressingMode = IZY, Cycles = 5 };
             _instructions[7, 2] = new Instruction { Name = "UNDEFINED", OperationCode = UndefinedOperation, AddressingMode = IMP, Cycles = 2 };
-            _instructions[7, 3] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = IZY, Cycles = 8 };
+            _instructions[7, 3] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = IZY, Cycles = 7 };
             _instructions[7, 4] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 4 };
             _instructions[7, 5] = new Instruction { Name = "ADC", OperationCode = ADC, AddressingMode = ZPX, Cycles = 4 };
             _instructions[7, 6] = new Instruction { Name = "ROR", OperationCode = ROR, AddressingMode = ZPX, Cycles = 6 };
@@ -166,11 +168,11 @@ namespace FamiComEmulator.Components
             _instructions[7, 8] = new Instruction { Name = "SEI", OperationCode = SEI, AddressingMode = IMP, Cycles = 2 };
             _instructions[7, 9] = new Instruction { Name = "ADC", OperationCode = ADC, AddressingMode = ABY, Cycles = 4 };
             _instructions[7, 10] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 2 };
-            _instructions[7, 11] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = ABY, Cycles = 7 };
+            _instructions[7, 11] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = ABY, Cycles = 6 };
             _instructions[7, 12] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 4 };
             _instructions[7, 13] = new Instruction { Name = "ADC", OperationCode = ADC, AddressingMode = ABX, Cycles = 4 };
             _instructions[7, 14] = new Instruction { Name = "ROR", OperationCode = ROR, AddressingMode = ABX, Cycles = 7 };
-            _instructions[7, 15] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = ABX, Cycles = 7 };
+            _instructions[7, 15] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = ABX, Cycles = 6 };
             _instructions[8, 0] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 2 };
             _instructions[8, 1] = new Instruction { Name = "STA", OperationCode = STA, AddressingMode = IZX, Cycles = 6 };
             _instructions[8, 2] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 2 };
@@ -286,7 +288,7 @@ namespace FamiComEmulator.Components
             _instructions[15, 0] = new Instruction { Name = "BEQ", OperationCode = BEQ, AddressingMode = REL, Cycles = 2 };
             _instructions[15, 1] = new Instruction { Name = "SBC", OperationCode = SBC, AddressingMode = IZY, Cycles = 5 };
             _instructions[15, 2] = new Instruction { Name = "UNDEFINED", OperationCode = UndefinedOperation, AddressingMode = IMP, Cycles = 2 };
-            _instructions[15, 3] = new Instruction { Name = "ISB", OperationCode = ISB, AddressingMode = IZY, Cycles = 8 };
+            _instructions[15, 3] = new Instruction { Name = "ISB", OperationCode = ISB, AddressingMode = IZY, Cycles = 7 };
             _instructions[15, 4] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 4 };
             _instructions[15, 5] = new Instruction { Name = "SBC", OperationCode = SBC, AddressingMode = ZPX, Cycles = 4 };
             _instructions[15, 6] = new Instruction { Name = "INC", OperationCode = INC, AddressingMode = ZPX, Cycles = 6 };
@@ -294,11 +296,11 @@ namespace FamiComEmulator.Components
             _instructions[15, 8] = new Instruction { Name = "SED", OperationCode = SED, AddressingMode = IMP, Cycles = 2 };
             _instructions[15, 9] = new Instruction { Name = "SBC", OperationCode = SBC, AddressingMode = ABY, Cycles = 4 };
             _instructions[15, 10] = new Instruction { Name = "NOP", OperationCode = NOP, AddressingMode = IMP, Cycles = 2 };
-            _instructions[15, 11] = new Instruction { Name = "ISB", OperationCode = ISB, AddressingMode = ABY, Cycles = 7 };
+            _instructions[15, 11] = new Instruction { Name = "ISB", OperationCode = ISB, AddressingMode = ABY, Cycles = 6 };
             _instructions[15, 12] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 4 };
             _instructions[15, 13] = new Instruction { Name = "SBC", OperationCode = SBC, AddressingMode = ABX, Cycles = 4 };
             _instructions[15, 14] = new Instruction { Name = "INC", OperationCode = INC, AddressingMode = ABX, Cycles = 7 };
-            _instructions[15, 15] = new Instruction { Name = "ISB", OperationCode = ISB, AddressingMode = ABX, Cycles = 7 };
+            _instructions[15, 15] = new Instruction { Name = "ISB", OperationCode = ISB, AddressingMode = ABX, Cycles = 6 };
         }
 
         #endregion
@@ -327,7 +329,8 @@ namespace FamiComEmulator.Components
             _address_rel = 0x0000;
             _address_abs = 0x0000;
             _fetchedData = 0x00;
-            _cycles = 8;
+            _cycles = 0;
+            Cycle = 0;
         }
 
         public void Irq()
@@ -391,9 +394,9 @@ namespace FamiComEmulator.Components
                 byte additional_cycle1 = instruction.AddressingMode();
                 byte additional_cycle2 = instruction.OperationCode();
                 _cycles += (byte)(additional_cycle1 & additional_cycle2);
+                Cycle += _cycles;
                 SetFlag(Flags6502.Unused, true);
             }
-
             _cycles--;
         }
 
@@ -1347,6 +1350,12 @@ namespace FamiComEmulator.Components
                 case 0xF4:
                     FetchZeroPageXAddress(); // Read from Zero Page address with X offset
                     break;
+
+                // NOP ilegal 0x80 (inmediate)
+                case 0x80:
+                    Read(ProgramCounter);
+                    ProgramCounter++;
+                    return 1;
             }
 
             return 0; // Default NOP, no additional cycles or memory access
