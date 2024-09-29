@@ -27,6 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="TestRoms\nestest.log">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="TestRoms\nestest.nes">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

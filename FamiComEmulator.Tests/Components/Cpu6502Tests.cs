@@ -1,4 +1,5 @@
 ﻿using FamiComEmulator.Components;
+using FamiComEmulator.Tests.TestRoms;
 using static FamiComEmulator.Components.ICpu6502;
 
 namespace FamiComEmulator.Tests.Components
@@ -9,6 +10,7 @@ namespace FamiComEmulator.Tests.Components
         private readonly string _ldaRomPath;
         private readonly string _adcRomPath;
         private readonly string _nestestRomPath;
+        private readonly string _nestestLogPath;
         private readonly string _multiplicationRomPath;
 
         public Cpu6502Tests()
@@ -17,6 +19,7 @@ namespace FamiComEmulator.Tests.Components
             _ldaRomPath = Path.Combine("TestRoms", "test_lda.nes");
             _adcRomPath = Path.Combine("TestRoms", "test_adc.nes");
             _nestestRomPath = Path.Combine("TestRoms", "nestest.nes");
+            _nestestLogPath = Path.Combine("TestRoms", "nestest.log");
             _multiplicationRomPath = Path.Combine("TestRoms", "test_multiplication.nes");
 
             // Ensure the TestRoms directory exists
@@ -121,29 +124,46 @@ namespace FamiComEmulator.Tests.Components
         }
 
         [Fact]
-        public void NesTestRom()
+        public void TestNestest()
         {
             // Arrange
             ICpu6502 cpu6502 = new Cpu6502();
             ICentralBus bus = new CentralBus(cpu6502);
             bus.AddCartridge(new Cartridge(_nestestRomPath));
+
+            // Parse the nestest log
+            List<CpuState> expectedStates = NestestParser.ParseLog(_nestestLogPath);
+
+            // Reset the bus and CPU
             bus.Reset();
 
-            // Act
-            while (!cpu6502.Finish())
+            // Hardcode the Program Counter to 0xC000 to enter the automated test mode
+            cpu6502.ProgramCounter = 0xC000;
+
+            // Act & Assert
+            foreach (var expectedState in expectedStates)
             {
-                bus.Clock();
+                while (cpu6502.ProgramCounter != expectedState.Address)
+                {
+                    cpu6502.Clock();
+                }
+
+                ushort pc = cpu6502.ProgramCounter;
+                byte a = cpu6502.Accumulator;
+                byte x = cpu6502.XRegister;
+                byte y = cpu6502.YRegister;
+                byte status = (byte)cpu6502.Status;
+                byte sp = cpu6502.StackPointer;
+
+                Assert.Equal(expectedState.Address, pc);
+                Assert.Equal(expectedState.Accumulator, a);
+                Assert.Equal(expectedState.XRegister, x);
+                Assert.Equal(expectedState.YRegister, y);
+                Assert.Equal(expectedState.Status, status);
+                Assert.Equal(expectedState.StackPointer, sp);
             }
 
-            // Asserts based on the expected state after running 'nestest.nes'
-            // These values should be adjusted according to 'nestest.nes' specifications
-            Assert.Equal(3, cpu6502.XRegister);
-            Assert.Equal(0, cpu6502.YRegister);
-            Assert.Equal(30, cpu6502.Accumulator);
-            Assert.Equal(0, cpu6502.GetFlag(Flags6502.CarryBit));
-            Assert.Equal(1, cpu6502.GetFlag(Flags6502.Zero));
-            Assert.Equal(0, cpu6502.GetFlag(Flags6502.Overflow));
-            Assert.Equal(0, cpu6502.GetFlag(Flags6502.Negative));
+            Assert.True(cpu6502.Finish(), "CPU did not finish execution as expected.");
         }
     }
 }
