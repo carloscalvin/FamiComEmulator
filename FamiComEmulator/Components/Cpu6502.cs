@@ -146,7 +146,7 @@ namespace FamiComEmulator.Components
             _instructions[6, 4] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 3 };
             _instructions[6, 5] = new Instruction { Name = "ADC", OperationCode = ADC, AddressingMode = ZP0, Cycles = 3 };
             _instructions[6, 6] = new Instruction { Name = "ROR", OperationCode = ROR, AddressingMode = ZP0, Cycles = 5 };
-            _instructions[6, 7] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = ZPX, Cycles = 6 };
+            _instructions[6, 7] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = ZP0, Cycles = 6 };
             _instructions[6, 8] = new Instruction { Name = "PLA", OperationCode = PLA, AddressingMode = IMP, Cycles = 4 };
             _instructions[6, 9] = new Instruction { Name = "ADC", OperationCode = ADC, AddressingMode = IMM, Cycles = 2 };
             _instructions[6, 10] = new Instruction { Name = "ROR", OperationCode = ROR, AddressingMode = IMP, Cycles = 2 };
@@ -166,7 +166,7 @@ namespace FamiComEmulator.Components
             _instructions[7, 8] = new Instruction { Name = "SEI", OperationCode = SEI, AddressingMode = IMP, Cycles = 2 };
             _instructions[7, 9] = new Instruction { Name = "ADC", OperationCode = ADC, AddressingMode = ABY, Cycles = 4 };
             _instructions[7, 10] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 2 };
-            _instructions[7, 11] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = ABS, Cycles = 7 };
+            _instructions[7, 11] = new Instruction { Name = "RRA", OperationCode = RRA, AddressingMode = ABY, Cycles = 7 };
             _instructions[7, 12] = new Instruction { Name = "UNDEFINED", OperationCode = NOP, AddressingMode = IMP, Cycles = 4 };
             _instructions[7, 13] = new Instruction { Name = "ADC", OperationCode = ADC, AddressingMode = ABX, Cycles = 4 };
             _instructions[7, 14] = new Instruction { Name = "ROR", OperationCode = ROR, AddressingMode = ABX, Cycles = 7 };

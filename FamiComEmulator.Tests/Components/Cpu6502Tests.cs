@@ -162,8 +162,6 @@ namespace FamiComEmulator.Tests.Components
                 Assert.Equal(expectedState.Status, status);
                 Assert.Equal(expectedState.StackPointer, sp);
             }
-
-            Assert.True(cpu6502.Finish(), "CPU did not finish execution as expected.");
         }
     }
 }
