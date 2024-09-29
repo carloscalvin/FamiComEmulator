@@ -11,8 +11,8 @@
         byte Scroll { get; set; }
         byte PpuAddress { get; set; }
         byte PpuData { get; set; }
-        int PpuX { get; }
-        int PpuY { get; }
+        int PpuX { get; set; }
+        int PpuY { get; set; }
 
         // Methods
         void Clock();

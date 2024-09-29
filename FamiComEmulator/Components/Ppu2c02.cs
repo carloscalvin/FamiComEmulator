@@ -13,8 +13,8 @@
         public byte Scroll { get; set; }
         public byte PpuAddress { get; set; }
         public byte PpuData { get; set; }
-        public int PpuX { get; private set; }
-        public int PpuY { get; private set; }
+        public int PpuX { get; set; }
+        public int PpuY { get; set; }
 
         #endregion
 
@@ -46,11 +46,11 @@
 
         public void Clock()
         {
-            _cycle++;
-            PpuX = _cycle;
+            PpuX++;
+            _cycle = PpuX;
             if (_cycle >= 341)
             {
-                _cycle = 0;
+                _cycle = PpuX = 0;
                 _scanline++;
                 if (_scanline >= 262)
                 {
@@ -89,7 +89,7 @@
             PpuAddress = 0;
             PpuData = 0;
 
-            _cycle = 21;
+            _cycle = 0;
             _scanline = 0;
             PpuX = _cycle;
             PpuY = _scanline;

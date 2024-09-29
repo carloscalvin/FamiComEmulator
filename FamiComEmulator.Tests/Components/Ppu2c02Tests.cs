@@ -42,11 +42,15 @@ namespace FamiComEmulator.Tests.Components
 
             // Hardcode the Program Counter to 0xC000 to enter the automated test mode
             cpu6502.ProgramCounter = 0xC000;
+            cpu6502.Cycle = 7;
+            ppu2c02.PpuX = 21;
+            ppu2c02.PpuY = 0;
+            cpu6502.Clock();
 
             // Act & Assert
-            foreach (var expectedState in expectedStates)
+            for (int i = 0; i < expectedStates.Count-1 ; i++)
             {
-                while (cpu6502.ProgramCounter != expectedState.Address)
+                while (cpu6502.ProgramCounter != expectedStates[i + 1].Address)
                 {
                     bus.Clock();
                 }
@@ -55,8 +59,8 @@ namespace FamiComEmulator.Tests.Components
                 int ppuY = ppu2c02.PpuY;
 
                 // Assert PPU state
-                Assert.Equal(expectedState.PpuX, ppuX);
-                Assert.Equal(expectedState.PpuY, ppuY);
+                Assert.Equal(expectedStates[i].PpuX, ppuX);
+                Assert.Equal(expectedStates[i].PpuY, ppuY);
             }
         }
     }
