@@ -8,8 +8,9 @@
         byte Status { get; }
         byte OamAddress { get; set; }
         byte OamData { get; set; }
-        byte Scroll { get; set; }
-        byte PpuAddress { get; set; }
+        byte ScrollX { get; }
+        byte ScrollY { get; }
+        ushort PpuAddress { get; set; }
         byte PpuData { get; set; }
         int PpuX { get; set; }
         int PpuY { get; set; }
