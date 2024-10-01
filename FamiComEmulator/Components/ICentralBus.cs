@@ -5,7 +5,7 @@
         ICpu6502 Cpu { get; }
         Ram Ram { get; }
         IPpu2c02 Ppu { get; }
-
+        ICartridge Cartridge { get; }
         void AddCartridge(ICartridge cartridge);
         void Clock();
         byte Read(ushort address);

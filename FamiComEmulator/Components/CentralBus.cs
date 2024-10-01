@@ -5,8 +5,6 @@
     /// </summary>
     public class CentralBus : ICentralBus
     {
-        private ICartridge? _cartridge;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CentralBus"/> class with the specified CPU.
         /// </summary>
@@ -32,6 +30,11 @@
         public IPpu2c02 Ppu { get; }
 
         /// <summary>
+        /// Gets the Cartridge connected to the central bus.
+        /// </summary>
+        public ICartridge Cartridge { get; private set; }
+
+        /// <summary>
         /// Gets the system RAM connected to the central bus.
         /// </summary>
         public Ram Ram { get; }
@@ -42,7 +45,7 @@
         /// <param name="cartridge">The cartridge to add.</param>
         public void AddCartridge(ICartridge cartridge)
         {
-            _cartridge = cartridge;
+            Cartridge = cartridge;
         }
 
         /// <summary>
@@ -74,7 +77,7 @@
             }
 
             // Attempt to read from the cartridge first
-            if (_cartridge != null && _cartridge.Read(address, ref data))
+            if (Cartridge != null && Cartridge.Read(address, ref data))
             {
                 return data;
             }
@@ -83,6 +86,13 @@
             if (address >= 0x0000 && address <= 0x1FFF)
             {
                 data = Ram.Read(address);
+                return data;
+            }
+
+            // Handle PPU memory reads (0x0000 - 0x3FFF)
+            if (address >= 0x0000 && address <= 0x3FFF)
+            {
+                data = Ppu.ReadPpuMemory((ushort)(address & 0x3FFF));
                 return data;
             }
 
@@ -98,6 +108,12 @@
         /// <param name="data">The byte value to write to memory.</param>
         public void Write(ushort address, byte data)
         {
+            if (address == 0x4014)
+            {
+                // DMA de OAM
+                Ppu.PerformOamDma(data);
+                return;
+            }
             // Handle PPU registers (0x2000 - 0x2007)
             if (address >= 0x2000 && address <= 0x2007)
             {
@@ -106,7 +122,7 @@
             }
 
             // Attempt to write to the cartridge first
-            if (_cartridge != null && _cartridge.Write(address, data))
+            if (Cartridge != null && Cartridge.Write(address, data))
             {
                 return;
             }
@@ -115,6 +131,13 @@
             if (address >= 0x0000 && address <= 0x1FFF)
             {
                 Ram.Write(address, data);
+                return;
+            }
+
+            // Handle PPU memory writes (0x0000 - 0x3FFF)
+            if (address >= 0x0000 && address <= 0x3FFF)
+            {
+                Ppu.WritePpuMemory((ushort)(address & 0x3FFF), data);
                 return;
             }
 

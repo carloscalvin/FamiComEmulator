@@ -1,10 +1,13 @@
-﻿namespace FamiComEmulator.Components
+﻿using static FamiComEmulator.Components.Ppu2c02;
+
+namespace FamiComEmulator.Components
 {
     /// <summary>
     /// Represents a NES Cartridge, handling PRG-ROM and CHR-ROM data.
     /// </summary>
     public class Cartridge : ICartridge
     {
+        public Mirror Mirror { get; private set; }
         private readonly byte _numPRGROM;
         private readonly byte _numCHRROM;
         private readonly byte _mapperNumber;
@@ -105,6 +108,16 @@
                 // Some cartridges use CHR-RAM instead of CHR-ROM
                 _CHRROMMemory = Array.Empty<byte>();
             }
+
+            bool horizontal = (header.Mapper1 & 0x01) != 0;
+            bool vertical = (header.Mapper1 & 0x02) != 0;
+
+            if (horizontal && !vertical)
+                Mirror = Mirror.Horizontal;
+            else if (vertical && !horizontal)
+                Mirror = Mirror.Vertical;
+            else
+                Mirror = Mirror.Horizontal;
         }
 
         /// <summary>
@@ -135,10 +148,13 @@
                 data = _PRGROMMemory[(bank * 16384) + offset];
                 return true;
             }
-            else
+            else if (address >= 0x0000 && address <= 0x1FFF)
             {
-                return false;
+                /*data = _CHRROMMemory[address & 0x1FFF];
+                return true;*/
             }
+
+            return false;
         }
 
         /// <summary>

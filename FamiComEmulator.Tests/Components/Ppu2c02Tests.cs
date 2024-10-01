@@ -30,7 +30,7 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             ICpu6502 cpu6502 = new Cpu6502();
-            IPpu2c02 ppu2c02 = new Ppu2c02();
+            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
             ICentralBus bus = new CentralBus(cpu6502, ppu2c02);
             bus.AddCartridge(new Cartridge(_nestestRomPath));
 
@@ -61,6 +61,31 @@ namespace FamiComEmulator.Tests.Components
                 // Assert PPU state
                 Assert.Equal(expectedStates[i].PpuX, ppuX);
                 Assert.Equal(expectedStates[i].PpuY, ppuY);
+            }
+        }
+
+        [Fact]
+        public void TestPpuFullModeNestest()
+        {
+            // Arrange
+            ICpu6502 cpu6502 = new Cpu6502();
+            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            ICentralBus bus = new CentralBus(cpu6502, ppu2c02);
+            bus.AddCartridge(new Cartridge(_nestestRomPath));
+
+            // Parse the nestest log
+            List<CpuPpuState> expectedStates = NestestParser.ParseLog(_nestestLogPath);
+
+            // Reset the bus, cpu and ppu
+            bus.Reset();
+
+            // Act & Assert
+            for (int i = 0; i < expectedStates.Count; i++)
+            {
+                while (cpu6502.ProgramCounter != expectedStates[i].Address)
+                {
+                    bus.Clock();
+                }
             }
         }
     }
