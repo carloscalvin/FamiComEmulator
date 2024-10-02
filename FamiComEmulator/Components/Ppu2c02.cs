@@ -9,7 +9,7 @@ namespace FamiComEmulator.Components
         // PPU Registers
         public byte Control { get; set; }
         public byte Mask { get; set; }
-        public byte Status { get; private set; }
+        public byte Status { get; set; }
         public byte OamAddress { get; set; }
         public byte OamData { get; set; }
         public byte ScrollX { get; private set; }
@@ -47,7 +47,7 @@ namespace FamiComEmulator.Components
             new byte[0x0400]  // Name Table 1
         };
         private byte[] _palettes = new byte[0x20];        // 32 bytes
-        private byte[] _oam = new byte[0x100];            // Object Attribute Memory
+        internal byte[] _oam = new byte[0x100];            // Object Attribute Memory
 
         // Internal state variables
         private int _cycle;
@@ -59,10 +59,10 @@ namespace FamiComEmulator.Components
         private byte _ppuDataBuffer = 0;
 
         // Background shifters
-        private ushort _bgShifterPatternLo;
-        private ushort _bgShifterPatternHi;
-        private ushort _bgShifterAttribLo;
-        private ushort _bgShifterAttribHi;
+        internal ushort _bgShifterPatternLo;
+        internal ushort _bgShifterPatternHi;
+        internal ushort _bgShifterAttribLo;
+        internal ushort _bgShifterAttribHi;
 
         // Sprite shifters
         private ushort[] _spriteShiftersPatternLo = new ushort[8];
@@ -171,33 +171,35 @@ namespace FamiComEmulator.Components
         {
             PpuX++;
             _cycle = PpuX;
+            _scanline = PpuY;
+
+            if (_scanline == 241 && _cycle == 1)
+            {
+                Status |= (byte)PpuStatusFlags.VerticalBlank;
+                _vblank = true;
+                if ((Control & (byte)PpuControlFlags.EnableNmi) != 0)
+                {
+                    _bus.Cpu.Nmi();
+                    _nmiOccurred = true;
+                }
+            }
+
+            if (_scanline == 261 && _cycle == 1)
+            {
+                Status &= 0x7F; // Clear VBlank flag
+                _vblank = false;
+            }
 
             if (_cycle >= 341)
             {
                 _cycle = PpuX = 0;
                 _scanline++;
-                PpuY = _scanline;
+                PpuY++;
 
                 if (_scanline >= 262)
                 {
                     _scanline = 0;
-                }
-
-                if (_scanline == 241 && _cycle == 1)
-                {
-                    Status |= (byte)PpuStatusFlags.VerticalBlank;
-                    _vblank = true;
-                    if ((Control & (byte)PpuControlFlags.EnableNmi) != 0)
-                    {
-                        _bus.Cpu.Nmi();
-                        _nmiOccurred = true;
-                    }
-                }
-
-                if (_scanline == 261 && _cycle == 1)
-                {
-                    Status &= 0x7F; // Clear VBlank flag
-                    _vblank = false;
+                    PpuY = 0;
                 }
 
                 if (_scanline >= 0 && _scanline < 240)
@@ -749,7 +751,7 @@ namespace FamiComEmulator.Components
             return b;
         }
 
-        private void ComposePixel()
+        internal void ComposePixel()
         {
             byte bgPixel = 0;
             byte bgPalette = 0;
@@ -853,7 +855,7 @@ namespace FamiComEmulator.Components
             _grayscale = (Mask & (byte)PpuMaskFlags.Grayscale) != 0;
         }
 
-        private Color GetColourFromPaletteRam(byte palette, byte pixel)
+        internal Color GetColourFromPaletteRam(byte palette, byte pixel)
         {
             if (palette >= 8)
             {

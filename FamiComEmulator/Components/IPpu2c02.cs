@@ -5,7 +5,7 @@
         // PPU Registers
         byte Control { get; set; }
         byte Mask { get; set; }
-        byte Status { get; }
+        byte Status { get; set; }
         byte OamAddress { get; set; }
         byte OamData { get; set; }
         byte ScrollX { get; }
