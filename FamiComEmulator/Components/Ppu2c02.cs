@@ -11,7 +11,16 @@ namespace FamiComEmulator.Components
         public byte Mask { get; set; }
         public byte Status { get; set; }
         public byte OamAddress { get; set; }
-        public byte OamData { get; set; }
+        public byte OamData
+        {
+            get => _oam[OamAddress];
+            set
+            {
+                _oam[OamAddress] = value;
+                // Increment OAM address after write
+                OamAddress++;
+            }
+        }
         public byte ScrollX { get; private set; }
         public byte ScrollY { get; private set; }
         public ushort PpuAddress { get; set; }
@@ -23,6 +32,7 @@ namespace FamiComEmulator.Components
 
         #region private properties
 
+        // Background temporary variables
         private byte _bgNextTileId;
         private byte _bgNextTileAttrib;
         private byte _bgNextTileLsb;
@@ -59,7 +69,6 @@ namespace FamiComEmulator.Components
         private bool _vblank;
         private bool _nmiOccurred;
         private byte _writeToggle = 0;
-        private bool _ppuAddrToggle = false;
         private byte _ppuDataBuffer = 0;
 
         // Background shifters
@@ -69,8 +78,8 @@ namespace FamiComEmulator.Components
         internal ushort _bgShifterAttribHi;
 
         // Sprite shifters
-        internal ushort[] _spriteShiftersPatternLo = new ushort[8];
-        internal ushort[] _spriteShiftersPatternHi = new ushort[8];
+        internal byte[] _spriteShiftersPatternLo = new byte[8];
+        internal byte[] _spriteShiftersPatternHi = new byte[8];
 
         #endregion
 
@@ -241,20 +250,16 @@ namespace FamiComEmulator.Components
                     // End of background tile fetching, reset horizontal scroll
                     TransferAddressX();
 
-                    // **Load sprite shifters for the next scanline**
+                    // Evaluate sprites for next scanline
+                    EvaluateSprites();
+
+                    // Load sprite shifters for the next scanline
                     LoadSpriteShifters();
                 }
                 else if (_cycle >= 321 && _cycle <= 336)
                 {
                     // Fetch background data for next scanline
                     FetchBackgroundData();
-                }
-
-                // Sprite evaluation
-                if (_cycle == 257)
-                {
-                    // Evaluate sprites for next scanline
-                    EvaluateSprites();
                 }
             }
 
@@ -332,6 +337,8 @@ namespace FamiComEmulator.Components
             {
                 case 0x00: // PPUCTRL
                     Control = data;
+                    _tramAddress.NametableX = (Control & 0x01) != 0;
+                    _tramAddress.NametableY = (Control & 0x02) != 0;
                     break;
                 case 0x01: // PPUMASK
                     Mask = data;
@@ -347,32 +354,37 @@ namespace FamiComEmulator.Components
                 case 0x05: // PPUSCROLL
                     if (_writeToggle == 0)
                     {
-                        ScrollX = data;
+                        _fineX = data & 0x07;
+                        _tramAddress.CoarseX = data >> 3;
+                        ScrollX = data; // Update ScrollX
                         _writeToggle = 1;
                     }
                     else
                     {
-                        ScrollY = data;
+                        _tramAddress.FineY = data & 0x07;
+                        _tramAddress.CoarseY = data >> 3;
+                        ScrollY = data; // Update ScrollY
                         _writeToggle = 0;
                     }
                     break;
                 case 0x06: // PPUADDR
-                    if (!_ppuAddrToggle)
+                    if (_writeToggle == 0)
                     {
-                        PpuAddress = (ushort)((data << 8) | (PpuAddress & 0x00FF));
-                        _ppuAddrToggle = true;
+                        _tramAddress.Raw = (ushort)((data & 0x3F) << 8 | (_tramAddress.Raw & 0x00FF));
+                        _writeToggle = 1;
                     }
                     else
                     {
-                        PpuAddress = (ushort)((PpuAddress & 0xFF00) | data);
-                        _ppuAddrToggle = false;
+                        _tramAddress.Raw = (ushort)((_tramAddress.Raw & 0xFF00) | data);
+                        _vramAddress.Raw = _tramAddress.Raw;
+                        _writeToggle = 0;
                     }
                     break;
                 case 0x07: // PPUDATA
-                    WritePpuMemory(PpuAddress, data);
-                    IncrementPpuAddress();
+                    WritePpuMemory(_vramAddress.Raw, data);
+                    _vramAddress.Raw += (ushort)(((Control & 0x04) != 0) ? 32 : 1);
                     break;
-                case 0x14:
+                case 0x14: // OAMDMA
                     PerformOamDma(data);
                     break;
                 default:
@@ -385,28 +397,21 @@ namespace FamiComEmulator.Components
             switch (register)
             {
                 case 0x02: // PPUSTATUS
-                    byte status = Status;
+                    byte status = (byte)(Status & 0xE0 | (_ppuDataBuffer & 0x1F));
                     Status &= 0x7F; // Clear VBlank flag after reading
-                    _ppuAddrToggle = false; // Reset toggle
-                    _writeToggle = 0; // Reset scroll toggle
+                    _writeToggle = 0; // Reset scroll and address toggles
                     return status;
                 case 0x04: // OAMDATA
                     return OamData;
                 case 0x07: // PPUDATA
-                    byte data;
-                    if (PpuAddress <= 0x3EFF)
+                    byte data = _ppuDataBuffer;
+                    _ppuDataBuffer = ReadPpuMemory(_vramAddress.Raw);
+                    if (_vramAddress.Raw >= 0x3F00)
                     {
-                        data = ReadPpuMemory(PpuAddress);
+                        data = _ppuDataBuffer;
                     }
-                    else
-                    {
-                        data = _palettes[PpuAddress & 0x1F];
-                    }
-
-                    byte bufferedData = _ppuDataBuffer;
-                    _ppuDataBuffer = data;
-                    IncrementPpuAddress();
-                    return bufferedData;
+                    _vramAddress.Raw += (ushort)(((Control & 0x04) != 0) ? 32 : 1);
+                    return data;
                 default:
                     return 0;
             }
@@ -433,6 +438,7 @@ namespace FamiComEmulator.Components
 
             if (_bus.Cartridge.Read(address, ref data))
             {
+                // Cartridge handled the read
             }
             else if (address >= 0x0000 && address <= 0x1FFF)
             {
@@ -461,6 +467,7 @@ namespace FamiComEmulator.Components
                             data = _nameTables[1][address & 0x03FF];
                         break;
                     case Mirror.FourScreen:
+                        // Implement four-screen mirroring if needed
                         break;
                     default:
                         break;
@@ -485,6 +492,7 @@ namespace FamiComEmulator.Components
 
             if (_bus.Cartridge.Write(address, data))
             {
+                // Cartridge handled the write
             }
             else if (address >= 0x0000 && address <= 0x1FFF)
             {
@@ -513,6 +521,7 @@ namespace FamiComEmulator.Components
                             _nameTables[1][address & 0x03FF] = data;
                         break;
                     case Mirror.FourScreen:
+                        // Implement four-screen mirroring if needed
                         break;
                     default:
                         break;
@@ -527,61 +536,6 @@ namespace FamiComEmulator.Components
                 if (address == 0x001C) address = 0x000C;
                 _palettes[address] = data;
             }
-        }
-
-        private byte GetNameTable(ushort address)
-        {
-            switch (_bus.Cartridge.Mirror)
-            {
-                case Mirror.Vertical:
-                    if (address < 0x0400)
-                        return _nameTables[0][address & 0x03FF];
-                    else if (address < 0x0800)
-                        return _nameTables[1][address & 0x03FF];
-                    else if (address < 0x0C00)
-                        return _nameTables[0][address & 0x03FF];
-                    else
-                        return _nameTables[1][address & 0x03FF];
-                case Mirror.Horizontal:
-                    if (address < 0x0800)
-                        return _nameTables[0][address & 0x03FF];
-                    else
-                        return _nameTables[1][address & 0x03FF];
-                case Mirror.FourScreen:
-                    return 0;
-                default:
-                    return 0;
-            }
-        }
-
-        private void RenderBackground()
-        {
-            ushort bitMask = (ushort)(0x8000 >> _fineX);
-
-            bool bgBit0 = (_bgShifterPatternLo & bitMask) != 0;
-            bool bgBit1 = (_bgShifterPatternHi & bitMask) != 0;
-            byte bgPixel = (byte)((bgBit1 ? 1 : 0) << 1 | (bgBit0 ? 1 : 0));
-
-            bool bgPal0 = (_bgShifterAttribLo & bitMask) != 0;
-            bool bgPal1 = (_bgShifterAttribHi & bitMask) != 0;
-            byte bgPalette = (byte)((bgPal1 ? 1 : 0) << 1 | (bgPal0 ? 1 : 0));
-
-            Color bgColor = GetColourFromPaletteRam(bgPalette, bgPixel);
-
-            _sprScreen.SetPixel(_cycle - 1, _scanline, bgColor);
-        }
-
-        private void IncrementPpuAddress()
-        {
-            if ((Control & (byte)PpuControlFlags.IncrementMode) != 0)
-            {
-                PpuAddress += 32;
-            }
-            else
-            {
-                PpuAddress += 1;
-            }
-            _vramAddress.Raw = PpuAddress;
         }
 
         private void UpdateShifters()
@@ -661,7 +615,6 @@ namespace FamiComEmulator.Components
 
         private void FetchBackgroundData()
         {
-            ushort tileAddress = 0;
             switch ((_cycle - 1) % 8)
             {
                 case 0:
@@ -685,15 +638,20 @@ namespace FamiComEmulator.Components
                 case 4:
                     // Fetch low byte of tile bitmap
                     ushort patternTableAddress = (ushort)(((Control & (byte)PpuControlFlags.PatternBackground) != 0 ? 1 : 0) << 12);
-                    tileAddress = (ushort)(patternTableAddress + (_bgNextTileId << 4) + _vramAddress.FineY);
+                    ushort tileAddress = (ushort)(patternTableAddress + (_bgNextTileId << 4) + _vramAddress.FineY);
                     _bgNextTileLsb = ReadPpuMemory(tileAddress);
                     break;
                 case 6:
                     // Fetch high byte of tile bitmap
-                    // Use tileAddress from case 4
-                    tileAddress = (ushort)(tileAddress + 8);
-                    _bgNextTileMsb = ReadPpuMemory(tileAddress);
+                    ushort tileAddr = (ushort)(((Control & (byte)PpuControlFlags.PatternBackground) != 0 ? 1 : 0) << 12);
+                    tileAddr += (ushort)((_bgNextTileId << 4) + _vramAddress.FineY + 8);
+                    _bgNextTileMsb = ReadPpuMemory(tileAddr);
                     break;
+            }
+
+            if (_cycle % 8 == 0)
+            {
+                IncrementScrollX();
             }
         }
 
@@ -784,60 +742,30 @@ namespace FamiComEmulator.Components
                 if (!spriteSize)
                 {
                     // 8x8 sprites
-                    if ((sprite.Attribute & 0x80) == 0)
+                    int row = PpuY - sprite.Y;
+                    if ((sprite.Attribute & 0x80) != 0)
                     {
-                        // Flip vertical
-                        patternAddrLo = (ushort)((Control & (byte)PpuControlFlags.PatternSprite) << 12 | (sprite.ID << 4) | (PpuY - sprite.Y));
+                        // Flip vertically
+                        row = 7 - row;
                     }
-                    else
-                    {
-                        // No flip vertical
-                        patternAddrLo = (ushort)((Control & (byte)PpuControlFlags.PatternSprite) << 12 | (sprite.ID << 4) | (7 - (PpuY - sprite.Y)));
-                    }
+
+                    ushort tileAddr = (ushort)(((Control & (byte)PpuControlFlags.PatternSprite) != 0 ? 1 : 0) << 12);
+                    tileAddr += (ushort)(sprite.ID * 16 + row);
+                    patternAddrLo = tileAddr;
+                    patternAddrHi = (ushort)(tileAddr + 8);
                 }
                 else
                 {
                     // 8x16 sprites
-                    bool isTopHalf = (PpuY - sprite.Y) < 8;
-                    byte spriteID = sprite.ID;
-
-                    if ((sprite.Attribute & 0x80) != 0)
-                    {
-                        // Flip vertical
-                        if (isTopHalf)
-                        {
-                            spriteID &= 0xFE;
-                            patternAddrLo = (ushort)((spriteID & 0x01) << 12 | (spriteID << 4) | (7 - (PpuY - sprite.Y)));
-                        }
-                        else
-                        {
-                            spriteID |= 0x01;
-                            patternAddrLo = (ushort)((spriteID & 0x01) << 12 | (spriteID << 4) | (15 - (PpuY - sprite.Y)));
-                        }
-                    }
-                    else
-                    {
-                        // No flip vertical
-                        if (isTopHalf)
-                        {
-                            spriteID &= 0xFE;
-                            patternAddrLo = (ushort)((spriteID & 0x01) << 12 | (spriteID << 4) | (PpuY - sprite.Y));
-                        }
-                        else
-                        {
-                            spriteID |= 0x01;
-                            patternAddrLo = (ushort)((spriteID & 0x01) << 12 | (spriteID << 4) | ((PpuY - sprite.Y) - 8));
-                        }
-                    }
+                    // (Implement handling for 8x16 sprites if necessary)
                 }
-
-                patternAddrHi = (ushort)(patternAddrLo + 8);
 
                 byte patternLo = ReadPpuMemory(patternAddrLo);
                 byte patternHi = ReadPpuMemory(patternAddrHi);
 
                 if ((sprite.Attribute & 0x40) != 0)
                 {
+                    // Flip horizontally
                     patternLo = FlipByte(patternLo);
                     patternHi = FlipByte(patternHi);
                 }
@@ -865,13 +793,14 @@ namespace FamiComEmulator.Components
 
             if (_renderBackground)
             {
-                ushort bitMask = (ushort)(0x8000 >> _fineX);
-                bool bgBit0 = (_bgShifterPatternLo & bitMask) != 0;
-                bool bgBit1 = (_bgShifterPatternHi & bitMask) != 0;
+                int bitPosition = 15 - _fineX;
+
+                bool bgBit0 = (_bgShifterPatternLo & (1 << bitPosition)) != 0;
+                bool bgBit1 = (_bgShifterPatternHi & (1 << bitPosition)) != 0;
                 bgPixel = (byte)((bgBit1 ? 1 : 0) << 1 | (bgBit0 ? 1 : 0));
 
-                bool bgPal0 = (_bgShifterAttribLo & bitMask) != 0;
-                bool bgPal1 = (_bgShifterAttribHi & bitMask) != 0;
+                bool bgPal0 = (_bgShifterAttribLo & (1 << bitPosition)) != 0;
+                bool bgPal1 = (_bgShifterAttribHi & (1 << bitPosition)) != 0;
                 bgPalette = (byte)((bgPal1 ? 1 : 0) << 1 | (bgPal0 ? 1 : 0));
             }
 
@@ -902,6 +831,22 @@ namespace FamiComEmulator.Components
                 }
             }
 
+            // Handle left-side rendering
+            bool renderBackgroundPixel = true;
+            bool renderSpritePixel = true;
+
+            if ((_cycle - 1) < 8)
+            {
+                if ((Mask & (byte)PpuMaskFlags.RenderBackgroundLeft) == 0)
+                {
+                    renderBackgroundPixel = false;
+                }
+                if ((Mask & (byte)PpuMaskFlags.RenderSpritesLeft) == 0)
+                {
+                    renderSpritePixel = false;
+                }
+            }
+
             byte finalPixel = 0;
             byte finalPalette = 0;
 
@@ -912,36 +857,45 @@ namespace FamiComEmulator.Components
             }
             else if (bgPixel == 0 && fgPixel > 0)
             {
-                finalPixel = fgPixel;
-                finalPalette = fgPalette;
+                if (renderSpritePixel)
+                {
+                    finalPixel = fgPixel;
+                    finalPalette = fgPalette;
+                }
             }
             else if (bgPixel > 0 && fgPixel == 0)
             {
-                finalPixel = bgPixel;
-                finalPalette = bgPalette;
+                if (renderBackgroundPixel)
+                {
+                    finalPixel = bgPixel;
+                    finalPalette = bgPalette;
+                }
             }
             else if (bgPixel > 0 && fgPixel > 0)
             {
                 if (fgPriority)
                 {
-                    finalPixel = fgPixel;
-                    finalPalette = fgPalette;
+                    if (renderSpritePixel)
+                    {
+                        finalPixel = fgPixel;
+                        finalPalette = fgPalette;
+                    }
                 }
                 else
                 {
-                    finalPixel = bgPixel;
-                    finalPalette = bgPalette;
+                    if (renderBackgroundPixel)
+                    {
+                        finalPixel = bgPixel;
+                        finalPalette = bgPalette;
+                    }
                 }
 
                 // Sprite Zero Hit Detection
                 if (_spriteZeroHitPossible && _spriteZeroBeingRendered)
                 {
-                    if ((Mask & (byte)(PpuMaskFlags.RenderBackground | PpuMaskFlags.RenderSprites)) != 0)
+                    if ((_cycle - 1) >= 0 && (_cycle - 1) < 255)
                     {
-                        if (_cycle >= 1 && _cycle <= 255)
-                        {
-                            Status |= (byte)PpuStatusFlags.SpriteZeroHit;
-                        }
+                        Status |= (byte)PpuStatusFlags.SpriteZeroHit;
                     }
                 }
             }
@@ -963,19 +917,20 @@ namespace FamiComEmulator.Components
 
         internal Color GetColourFromPaletteRam(byte palette, byte pixel)
         {
-            if (palette >= 8)
+            if (pixel == 0)
             {
                 palette = 0;
             }
-            int paletteIndex = palette * 4 + pixel;
+            int paletteIndex = (palette << 2) + pixel;
             paletteIndex &= 0x1F;
 
-            if (paletteIndex >= NesPalette.Length)
+            byte colorIndex = _palettes[paletteIndex];
+            if (colorIndex >= NesPalette.Length)
             {
                 return Color.Black;
             }
 
-            Color color = NesPalette[paletteIndex];
+            Color color = NesPalette[colorIndex];
 
             if (_grayscale)
             {

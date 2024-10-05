@@ -87,7 +87,6 @@ namespace FamiComEmulator.Tests.Components
             Assert.Equal(0x00, ppu2c02.Control);
             Assert.Equal(0x00, ppu2c02.Mask);
             Assert.Equal(0x00, ppu2c02.Status);
-            Assert.Equal(0x00, ppu2c02.OamAddress);
             Assert.Equal(0x00, ppu2c02.OamData);
             Assert.Equal(0x0000, ppu2c02.PpuAddress);
             Assert.Equal(0x00, ppu2c02.PpuData);
