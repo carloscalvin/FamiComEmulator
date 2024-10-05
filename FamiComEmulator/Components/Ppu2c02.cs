@@ -29,7 +29,7 @@ namespace FamiComEmulator.Components
         private IPpuRenderer _sprScreen;
         private bool _renderBackground;
         private bool _renderSprites;
-        private int _fineX;
+        internal int _fineX;
 
         private SpriteAttributeEntry[] _spriteScanline = new SpriteAttributeEntry[8];
         private int _spriteCount;
@@ -50,8 +50,8 @@ namespace FamiComEmulator.Components
         internal byte[] _oam = new byte[0x100];            // Object Attribute Memory
 
         // Internal state variables
-        private int _cycle;
-        private int _scanline;
+        internal int _cycle;
+        internal int _scanline;
         private bool _vblank;
         private bool _nmiOccurred;
         private byte _writeToggle = 0;
@@ -863,7 +863,7 @@ namespace FamiComEmulator.Components
             _sprScreen.SetPixel(_cycle - 1, _scanline, color);
         }
 
-        private void UpdateRenderFlags()
+        internal void UpdateRenderFlags()
         {
             _renderBackground = (Mask & (byte)PpuMaskFlags.RenderBackground) != 0;
             _renderSprites = (Mask & (byte)PpuMaskFlags.RenderSprites) != 0;

@@ -274,11 +274,24 @@ namespace FamiComEmulator.Tests.Components
             // Arrange
             var _mockRenderer = new Mock<IPpuRenderer>();
             var ppu2c02 = new Ppu2c02(_mockRenderer.Object);
+
+            // Set Mask to render background and update render flags
             ppu2c02.Mask |= (byte)Ppu2c02.PpuMaskFlags.RenderBackground;
+            ppu2c02.UpdateRenderFlags(); // Ensure _renderBackground is updated
+
+            // Set fine X scroll to 0
+            ppu2c02._fineX = 0;
+
+            // Set cycle and scanline
+            ppu2c02._cycle = 1; // So that _cycle - 1 = 0
+            ppu2c02._scanline = 0;
+
+            // Set background shifters to produce bgPixel = 1 and bgPalette = 1
             ppu2c02._bgShifterPatternLo = 0x8000; // Binary: 1000 0000 0000 0000
             ppu2c02._bgShifterPatternHi = 0x0000;
             ppu2c02._bgShifterAttribLo = 0x8000;
             ppu2c02._bgShifterAttribHi = 0x0000;
+
             int expectedCycle = 1;
             int expectedScanline = 0;
 
