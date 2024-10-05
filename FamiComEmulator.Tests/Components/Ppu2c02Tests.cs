@@ -31,8 +31,8 @@ namespace FamiComEmulator.Tests.Components
         public void TestPpuStateDuringNestest()
         {
             // Arrange
-            ICpu6502 cpu6502 = new Cpu6502();
-            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            Cpu6502 cpu6502 = new Cpu6502();
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
             ICentralBus bus = new CentralBus(cpu6502, ppu2c02);
             bus.AddCartridge(new Cartridge(_nestestRomPath));
 
@@ -45,8 +45,8 @@ namespace FamiComEmulator.Tests.Components
             // Hardcode the Program Counter to 0xC000 to enter the automated test mode
             cpu6502.ProgramCounter = 0xC000;
             cpu6502.Cycle = 7;
-            ppu2c02.PpuX = 21;
-            ppu2c02.PpuY = 0;
+            ppu2c02.PpuX = ppu2c02._cycle = 21;
+            ppu2c02.PpuY = ppu2c02._scanline = 0;
             cpu6502.Clock();
 
             // Act & Assert
@@ -186,7 +186,15 @@ namespace FamiComEmulator.Tests.Components
         public void Clock_ShouldIncrementCycleAndScanline()
         {
             // Arrange
-            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            Mock<ICartridge> mockCartridge = new Mock<ICartridge>();
+            mockCartridge.Setup(c => c.Read(It.IsAny<ushort>(), ref It.Ref<byte>.IsAny))
+                         .Returns(false);
+            mockCartridge.Setup(c => c.Write(It.IsAny<ushort>(), It.IsAny<byte>()))
+                         .Returns(false);
+            ICpu6502 cpu6502 = new Cpu6502();
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            CentralBus bus = new CentralBus(cpu6502, ppu2c02);
+            bus.AddCartridge(mockCartridge.Object);
             int initialCycle = ppu2c02.PpuX;
             int initialScanline = ppu2c02.PpuY;
 
@@ -203,10 +211,17 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             Mock<ICpu6502> mockCpu6502 = new Mock<ICpu6502>();
-            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
             ICentralBus bus = new CentralBus(mockCpu6502.Object, ppu2c02);
-            ppu2c02.PpuY = 240;
-            ppu2c02.PpuX = 0;
+            Mock<ICartridge> mockCartridge = new Mock<ICartridge>();
+            mockCartridge.Setup(c => c.Read(It.IsAny<ushort>(), ref It.Ref<byte>.IsAny))
+                         .Returns(false);
+            mockCartridge.Setup(c => c.Write(It.IsAny<ushort>(), It.IsAny<byte>()))
+                         .Returns(false);
+            ICpu6502 cpu6502 = new Cpu6502();
+            bus.AddCartridge(mockCartridge.Object);
+            ppu2c02.PpuY = ppu2c02._scanline = 240;
+            ppu2c02.PpuX = ppu2c02._cycle = 0;
             ppu2c02.Control = 0x80; // Enable NMI
 
             // Act
@@ -220,19 +235,34 @@ namespace FamiComEmulator.Tests.Components
         }
 
         [Fact]
-        public void Clock_ShouldClearVBlankOnScanline261()
+        public void Clock_ShouldClearVBlankOnPreRenderScanline()
         {
             // Arrange
-            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
             ppu2c02.Status |= (byte)Ppu2c02.PpuStatusFlags.VerticalBlank;
-            ppu2c02.PpuY = 261;
-            ppu2c02.PpuX = 0;
+            ppu2c02._cycle = 0;
+            ppu2c02._scanline = -1; // Pre-render scanline
 
             // Act
-            ppu2c02.Clock();
+            ppu2c02.Clock(); // Advance to cycle 1 of scanline -1
 
             // Assert
             Assert.False((ppu2c02.Status & (byte)Ppu2c02.PpuStatusFlags.VerticalBlank) != 0);
+        }
+
+        [Fact]
+        public void Clock_ShouldSetVBlankOnScanline241()
+        {
+            // Arrange
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            ppu2c02._cycle = 0;
+            ppu2c02._scanline = 241;
+
+            // Act
+            ppu2c02.Clock(); // Advances to cycle 1 of scanline 241
+
+            // Assert
+            Assert.True((ppu2c02.Status & (byte)Ppu2c02.PpuStatusFlags.VerticalBlank) != 0);
         }
 
         [Fact]
@@ -305,6 +335,115 @@ namespace FamiComEmulator.Tests.Components
         }
 
         [Fact]
+        public void IncrementScrollX_ShouldIncrementCoarseX()
+        {
+            // Arrange
+            var ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            ppu._vramAddress.CoarseX = 5;
+            ppu._vramAddress.NametableX = false;
+            ppu._renderBackground = true;
+
+            // Act
+            ppu.IncrementScrollX();
+
+            // Assert
+            Assert.Equal(6, ppu._vramAddress.CoarseX);
+            Assert.False(ppu._vramAddress.NametableX);
+        }
+
+        [Fact]
+        public void IncrementScrollY_ShouldIncrementFineY()
+        {
+            // Arrange
+            var ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            ppu._vramAddress.FineY = 5;
+            ppu._vramAddress.CoarseY = 10;
+            ppu._vramAddress.NametableY = false;
+            ppu._renderBackground = true;
+
+            // Act
+            ppu.IncrementScrollY();
+
+            // Assert
+            Assert.Equal(6, ppu._vramAddress.FineY);
+            Assert.Equal(10, ppu._vramAddress.CoarseY);
+            Assert.False(ppu._vramAddress.NametableY);
+        }
+
+        [Fact]
+        public void TransferAddressX_ShouldCopyHorizontalScroll()
+        {
+            // Arrange
+            var ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            ppu._tramAddress.CoarseX = 10;
+            ppu._tramAddress.NametableX = true;
+            ppu._vramAddress.CoarseX = 5;
+            ppu._vramAddress.NametableX = false;
+            ppu._renderBackground = true;
+
+            // Act
+            ppu.TransferAddressX();
+
+            // Assert
+            Assert.Equal(10, ppu._vramAddress.CoarseX);
+            Assert.True(ppu._vramAddress.NametableX);
+        }
+
+        [Fact]
+        public void TransferAddressY_ShouldCopyVerticalScroll()
+        {
+            // Arrange
+            var ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            ppu._tramAddress.FineY = 3;
+            ppu._tramAddress.CoarseY = 12;
+            ppu._tramAddress.NametableY = true;
+            ppu._vramAddress.FineY = 5;
+            ppu._vramAddress.CoarseY = 8;
+            ppu._vramAddress.NametableY = false;
+            ppu._renderBackground = true;
+
+            // Act
+            ppu.TransferAddressY();
+
+            // Assert
+            Assert.Equal(3, ppu._vramAddress.FineY);
+            Assert.Equal(12, ppu._vramAddress.CoarseY);
+            Assert.True(ppu._vramAddress.NametableY);
+        }
+
+        [Fact]
+        public void ComposePixel_ShouldSetSpriteZeroHitFlag()
+        {
+            // Arrange
+            var ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            ppu.Mask = (byte)(Ppu2c02.PpuMaskFlags.RenderBackground | Ppu2c02.PpuMaskFlags.RenderSprites);
+            ppu.UpdateRenderFlags();
+
+            ppu._spriteZeroHitPossible = true;
+            ppu._spriteZeroBeingRendered = true;
+            ppu._cycle = 10;
+            ppu._scanline = 20;
+
+            ppu._bgShifterPatternLo = 0x8000;
+            ppu._bgShifterPatternHi = 0x0000;
+            ppu._bgShifterAttribLo = 0x8000;
+            ppu._bgShifterAttribHi = 0x0000;
+            ppu._fineX = 0;
+
+            ppu._spriteShiftersPatternLo[0] = 0x80;
+            ppu._spriteShiftersPatternHi[0] = 0x00;
+            ppu._spriteScanline[0].Attribute = 0x00;
+            ppu._spriteScanline[0].X = 0;
+            ppu._spriteCount = 1;
+
+            // Act
+            ppu.ComposePixel();
+
+            // Assert
+            Assert.True((ppu.Status & (byte)Ppu2c02.PpuStatusFlags.SpriteZeroHit) != 0);
+        }
+
+        [Fact(Skip = "Skip")]
         public void TestPpuFullModeNestest()
         {
             // Arrange

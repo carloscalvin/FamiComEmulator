@@ -23,18 +23,22 @@ namespace FamiComEmulator.Components
 
         #region private properties
 
+        private byte _bgNextTileId;
+        private byte _bgNextTileAttrib;
+        private byte _bgNextTileLsb;
+        private byte _bgNextTileMsb;
         private bool _grayscale;
-        private LoopyRegister _vramAddress;
-        private LoopyRegister _tramAddress;
+        internal LoopyRegister _vramAddress;
+        internal LoopyRegister _tramAddress;
         private IPpuRenderer _sprScreen;
-        private bool _renderBackground;
+        internal bool _renderBackground;
         private bool _renderSprites;
         internal int _fineX;
 
-        private SpriteAttributeEntry[] _spriteScanline = new SpriteAttributeEntry[8];
-        private int _spriteCount;
-        private bool _spriteZeroHitPossible;
-        private bool _spriteZeroBeingRendered;
+        internal SpriteAttributeEntry[] _spriteScanline = new SpriteAttributeEntry[8];
+        internal int _spriteCount;
+        internal bool _spriteZeroHitPossible;
+        internal bool _spriteZeroBeingRendered;
 
         // Reference to central bus
         private ICentralBus _bus;
@@ -65,8 +69,8 @@ namespace FamiComEmulator.Components
         internal ushort _bgShifterAttribHi;
 
         // Sprite shifters
-        private ushort[] _spriteShiftersPatternLo = new ushort[8];
-        private ushort[] _spriteShiftersPatternHi = new ushort[8];
+        internal ushort[] _spriteShiftersPatternLo = new ushort[8];
+        internal ushort[] _spriteShiftersPatternHi = new ushort[8];
 
         #endregion
 
@@ -169,53 +173,103 @@ namespace FamiComEmulator.Components
 
         public void Clock()
         {
-            PpuX++;
-            _cycle = PpuX;
-            _scanline = PpuY;
-
-            if (_scanline == 241 && _cycle == 1)
-            {
-                Status |= (byte)PpuStatusFlags.VerticalBlank;
-                _vblank = true;
-                if ((Control & (byte)PpuControlFlags.EnableNmi) != 0)
-                {
-                    _bus.Cpu.Nmi();
-                    _nmiOccurred = true;
-                }
-            }
-
-            if (_scanline == 261 && _cycle == 1)
-            {
-                Status &= 0x7F; // Clear VBlank flag
-                _vblank = false;
-            }
+            // Increment cycle and scanline counters
+            _cycle++;
 
             if (_cycle >= 341)
             {
-                _cycle = PpuX = 0;
+                _cycle = 0;
                 _scanline++;
-                PpuY++;
-
-                if (_scanline >= 262)
+                if (_scanline >= 261)
                 {
-                    _scanline = 0;
-                    PpuY = 0;
-                }
-
-                if (_scanline >= 0 && _scanline < 240)
-                {
-                    EvaluateSprites();
-                    //LoadBackgroundShifters();
-                    //LoadSpriteShifters();
+                    _scanline = -1; // Reset scanline to pre-render line
                 }
             }
 
-            if (_scanline >= 0 && _scanline < 240)
+            // Update PpuX and PpuY
+            PpuX = _cycle;
+            PpuY = _scanline;
+
+            // Pre-render scanline (-1)
+            if (_scanline == -1)
             {
+                if (_cycle == 1)
+                {
+                    // Clear VBlank flag
+                    Status &= 0x7F;
+                    _spriteZeroHitPossible = false;
+                    _spriteZeroBeingRendered = false;
+                }
+                else if (_cycle >= 280 && _cycle <= 304)
+                {
+                    // Transfer vertical bits from temp VRAM address to actual VRAM address
+                    TransferAddressY();
+                }
+            }
+
+            // Visible scanlines (0-239)
+            if (_scanline >= 0 && _scanline <= 239)
+            {
+                // Background rendering
                 if (_cycle >= 1 && _cycle <= 256)
                 {
+                    // Update shifters
                     UpdateShifters();
+
+                    // Fetch background data
+                    switch ((_cycle - 1) % 8)
+                    {
+                        case 0:
+                            LoadBackgroundShifters();
+                            FetchBackgroundData();
+                            break;
+                        default:
+                            FetchBackgroundData();
+                            break;
+                    }
+
+                    // Render pixel
                     ComposePixel();
+                }
+                else if (_cycle == 257)
+                {
+                    // End of background tile fetching, reset horizontal scroll
+                    IncrementScrollY();
+                    TransferAddressX();
+                }
+                else if (_cycle == 256)
+                {
+                    // Increment vertical scroll
+                    IncrementScrollY();
+                }
+                else if (_cycle >= 321 && _cycle <= 336)
+                {
+                    // Fetch background data for next scanline
+                    FetchBackgroundData();
+                }
+
+                // Sprite evaluation
+                if (_cycle == 257 && _scanline >= 0)
+                {
+                    // Evaluate sprites for next scanline
+                    EvaluateSprites();
+                }
+            }
+
+            // Post-render scanline (240)
+            if (_scanline == 240)
+            {
+                // Do nothing
+            }
+
+            // Vertical blanking lines (241-260)
+            if (_scanline == 241 && _cycle == 1)
+            {
+                // Set VBlank flag and trigger NMI if enabled
+                Status |= (byte)PpuStatusFlags.VerticalBlank;
+                if ((Control & (byte)PpuControlFlags.EnableNmi) != 0)
+                {
+                    _bus.Cpu.Nmi();
                 }
             }
         }
@@ -538,7 +592,7 @@ namespace FamiComEmulator.Components
                 _bgShifterAttribHi <<= 1;
             }
 
-            if (_renderSprites)
+            if (_renderSprites && _cycle >= 1 && _cycle <= 256)
             {
                 for (int i = 0; i < _spriteCount; i++)
                 {
@@ -603,34 +657,57 @@ namespace FamiComEmulator.Components
             }
         }
 
-        private void LoadBackgroundShifters()
+        private void FetchBackgroundData()
         {
-            _bgShifterPatternLo = (ushort)((_bgShifterPatternLo & 0xFF00) |
-                ReadPpuMemory((ushort)(0x2000 | (_vramAddress.Raw & 0x0FFF))));
-
-            _bgShifterPatternHi = (ushort)((_bgShifterPatternHi & 0xFF00) |
-                ReadPpuMemory((ushort)(0x2000 | ((_vramAddress.Raw & 0x0FFF) + 8))));
-
-            int nametableY = _vramAddress.NametableY ? 1 : 0;
-            int nametableX = _vramAddress.NametableX ? 1 : 0;
-
-            byte attrib = ReadPpuMemory((ushort)(0x23C0 |
-                (nametableY << 11) |
-                (nametableX << 10) |
-                ((_vramAddress.CoarseY >> 2) << 3) |
-                (_vramAddress.CoarseX >> 2)));
-
-            attrib = (byte)(((_vramAddress.CoarseY & 0x02) != 0) ? (attrib >> 4) : attrib);
-            attrib = (byte)(((_vramAddress.CoarseX & 0x02) != 0) ? (attrib >> 2) : attrib);
-            attrib &= 0x03;
-
-            _bgShifterAttribLo = (ushort)((_bgShifterAttribLo & 0xFF00) | (attrib & 0x01));
-            _bgShifterAttribHi = (ushort)((_bgShifterAttribHi & 0xFF00) | ((attrib & 0x02) >> 1));
+            ushort tileAddress = 0;
+            switch ((_cycle - 1) % 8)
+            {
+                case 0:
+                    // Fetch nametable byte
+                    _bgNextTileId = ReadPpuMemory((ushort)(0x2000 | (_vramAddress.Raw & 0x0FFF)));
+                    break;
+                case 2:
+                    // Fetch attribute byte
+                    ushort attribAddress = (ushort)(0x23C0 | (_vramAddress.Raw & 0x0C00) | ((_vramAddress.CoarseY >> 2) << 3) | (_vramAddress.CoarseX >> 2));
+                    _bgNextTileAttrib = ReadPpuMemory(attribAddress);
+                    if ((_vramAddress.CoarseY & 0x02) != 0)
+                    {
+                        _bgNextTileAttrib >>= 4;
+                    }
+                    if ((_vramAddress.CoarseX & 0x02) != 0)
+                    {
+                        _bgNextTileAttrib >>= 2;
+                    }
+                    _bgNextTileAttrib &= 0x03;
+                    break;
+                case 4:
+                    // Fetch low byte of tile bitmap
+                    ushort patternTableAddress = (ushort)(((Control & (byte)PpuControlFlags.PatternBackground) != 0 ? 1 : 0) << 12);
+                    tileAddress = (ushort)(patternTableAddress + (_bgNextTileId << 4) + _vramAddress.FineY);
+                    _bgNextTileLsb = ReadPpuMemory(tileAddress);
+                    break;
+                case 6:
+                    // Fetch high byte of tile bitmap
+                    // Use tileAddress from case 4
+                    tileAddress = (ushort)(tileAddress + 8);
+                    _bgNextTileMsb = ReadPpuMemory(tileAddress);
+                    break;
+            }
         }
 
-        private void IncrementScrollX()
+        private void LoadBackgroundShifters()
         {
-            if (_renderBackground || _renderSprites)
+            _bgShifterPatternLo = (ushort)((_bgShifterPatternLo & 0xFF00) | _bgNextTileLsb);
+            _bgShifterPatternHi = (ushort)((_bgShifterPatternHi & 0xFF00) | _bgNextTileMsb);
+
+            byte attrib = _bgNextTileAttrib;
+            _bgShifterAttribLo = (ushort)((_bgShifterAttribLo & 0xFF00) | ((attrib & 0x01) != 0 ? 0xFF : 0x00));
+            _bgShifterAttribHi = (ushort)((_bgShifterAttribHi & 0xFF00) | ((attrib & 0x02) != 0 ? 0xFF : 0x00));
+        }
+
+        internal void IncrementScrollX()
+        {
+            if ((_renderBackground || _renderSprites))
             {
                 if (_vramAddress.CoarseX == 31)
                 {
@@ -644,9 +721,9 @@ namespace FamiComEmulator.Components
             }
         }
 
-        private void IncrementScrollY()
+        internal void IncrementScrollY()
         {
-            if (_renderBackground || _renderSprites)
+            if ((_renderBackground || _renderSprites))
             {
                 if (_vramAddress.FineY < 7)
                 {
@@ -672,17 +749,23 @@ namespace FamiComEmulator.Components
             }
         }
 
-        private void TransferAddressX()
+        internal void TransferAddressX()
         {
-            _vramAddress.NametableX = _tramAddress.NametableX;
-            _vramAddress.CoarseX = _tramAddress.CoarseX;
+            if ((_renderBackground || _renderSprites))
+            {
+                _vramAddress.CoarseX = _tramAddress.CoarseX;
+                _vramAddress.NametableX = _tramAddress.NametableX;
+            }
         }
 
-        private void TransferAddressY()
+        internal void TransferAddressY()
         {
-            _vramAddress.FineY = _tramAddress.FineY;
-            _vramAddress.NametableY = _tramAddress.NametableY;
-            _vramAddress.CoarseY = _tramAddress.CoarseY;
+            if ((_renderBackground || _renderSprites))
+            {
+                _vramAddress.FineY = _tramAddress.FineY;
+                _vramAddress.CoarseY = _tramAddress.CoarseY;
+                _vramAddress.NametableY = _tramAddress.NametableY;
+            }
         }
 
         private void LoadSpriteShifters()
@@ -792,13 +875,15 @@ namespace FamiComEmulator.Components
 
             if (_renderSprites)
             {
+                _spriteZeroBeingRendered = false;
+
                 for (int i = 0; i < _spriteCount; i++)
                 {
                     if (_spriteScanline[i].X == 0)
                     {
-                        bool fgBit0 = (_spriteShiftersPatternLo[i] & 0x80) != 0;
-                        bool fgBit1 = (_spriteShiftersPatternHi[i] & 0x80) != 0;
-                        fgPixel = (byte)((fgBit1 ? 1 : 0) << 1 | (fgBit0 ? 1 : 0));
+                        byte fgBit0 = (byte)((_spriteShiftersPatternLo[i] & 0x80) != 0 ? 1 : 0);
+                        byte fgBit1 = (byte)((_spriteShiftersPatternHi[i] & 0x80) != 0 ? 1 : 0);
+                        fgPixel = (byte)((fgBit1 << 1) | fgBit0);
 
                         fgPalette = (byte)((_spriteScanline[i].Attribute & 0x03) + 0x04);
                         fgPriority = (_spriteScanline[i].Attribute & 0x20) == 0;
@@ -849,9 +934,9 @@ namespace FamiComEmulator.Components
                 // Sprite Zero Hit Detection
                 if (_spriteZeroHitPossible && _spriteZeroBeingRendered)
                 {
-                    if ((_renderBackground && _renderSprites))
+                    if ((Mask & (byte)(PpuMaskFlags.RenderBackground | PpuMaskFlags.RenderSprites)) != 0)
                     {
-                        if ((_cycle >= 9 && _cycle < 258) || (_cycle >= 1 && _cycle < 258))
+                        if (_cycle >= 1 && _cycle <= 255)
                         {
                             Status |= (byte)PpuStatusFlags.SpriteZeroHit;
                         }
