@@ -899,8 +899,6 @@
             }
 
             Color color = GetColourFromPaletteRam(finalPalette, finalPixel);
-            int x = _cycle - 1;
-            int y = _scanline;
             _sprScreen.SetPixel(_cycle - 1, _scanline, color);
         }
 
