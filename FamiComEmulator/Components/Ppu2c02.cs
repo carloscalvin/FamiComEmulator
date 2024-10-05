@@ -340,6 +340,7 @@
                     break;
                 case 0x01: // PPUMASK
                     Mask = data;
+                    Console.WriteLine($"PPUMASK: {data:X}");
                     UpdateRenderFlags();
                     UpdateGrayscaleFlag();
                     break;
@@ -755,7 +756,26 @@
                 else
                 {
                     // 8x16 sprites
-                    // (Implement handling for 8x16 sprites if necessary)
+                    int row = PpuY - sprite.Y;
+                    if ((sprite.Attribute & 0x80) != 0)
+                    {
+                        // Flip vertically
+                        row = 15 - row;
+                    }
+
+                    // Determine which tile to use (top or bottom)
+                    int tileIndex = sprite.ID & 0xFE;
+                    if (row > 7)
+                    {
+                        // Bottom tile
+                        tileIndex += 1;
+                        row -= 8;
+                    }
+
+                    ushort patternTable = (ushort)((sprite.ID & 0x01) << 12);
+                    ushort tileAddr = (ushort)(patternTable + tileIndex * 16 + row);
+                    patternAddrLo = tileAddr;
+                    patternAddrHi = (ushort)(tileAddr + 8);
                 }
 
                 byte patternLo = ReadPpuMemory(patternAddrLo);
