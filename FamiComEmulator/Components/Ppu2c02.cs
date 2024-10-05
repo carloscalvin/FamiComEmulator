@@ -1,6 +1,4 @@
-﻿using System.Drawing;
-
-namespace FamiComEmulator.Components
+﻿namespace FamiComEmulator.Components
 {
     public class Ppu2c02 : IPpu2c02
     {
@@ -901,6 +899,9 @@ namespace FamiComEmulator.Components
             }
 
             Color color = GetColourFromPaletteRam(finalPalette, finalPixel);
+            int x = _cycle - 1;
+            int y = _scanline;
+            Console.WriteLine($"Set x: {x} y: {y} pixel: {color}");
             _sprScreen.SetPixel(_cycle - 1, _scanline, color);
         }
 
