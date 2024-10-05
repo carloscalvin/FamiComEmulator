@@ -52,7 +52,6 @@
         private ICentralBus _bus;
 
         // PPU Memory
-        private byte[][] _patternTables = new byte[2][] { new byte[0x1000], new byte[0x1000] };
         private byte[][] _nameTables = new byte[2][]
         {
             new byte[0x0400], // Name Table 0
@@ -298,14 +297,6 @@
             _vblank = false;
             _nmiOccurred = false;
 
-            for (int i = 0; i < _patternTables.Length; i++)
-            {
-                if (_patternTables[i] != null)
-                {
-                    Array.Clear(_patternTables[i], 0, _patternTables[i].Length);
-                }
-            }
-
             for (int i = 0; i < _nameTables.Length; i++)
             {
                 if (_nameTables[i] != null)
@@ -439,10 +430,6 @@
             {
                 // Cartridge handled the read
             }
-            else if (address >= 0x0000 && address <= 0x1FFF)
-            {
-                data = _patternTables[(address & 0x1000) >> 12][address & 0x0FFF];
-            }
             else if (address >= 0x2000 && address <= 0x3EFF)
             {
                 address &= 0x0FFF;
@@ -492,10 +479,6 @@
             if (_bus.Cartridge.Write(address, data))
             {
                 // Cartridge handled the write
-            }
-            else if (address >= 0x0000 && address <= 0x1FFF)
-            {
-                _patternTables[(address & 0x1000) >> 12][address & 0x0FFF] = data;
             }
             else if (address >= 0x2000 && address <= 0x3EFF)
             {
