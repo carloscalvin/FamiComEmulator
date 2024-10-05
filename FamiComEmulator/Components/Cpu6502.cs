@@ -391,7 +391,6 @@ namespace FamiComEmulator.Components
                 ProgramCounter++;
                 var instruction = GetInstructionByPosition(_opcode);
                 _cycles = instruction.Cycles;
-                Console.WriteLine($"Executing address: {ProgramCounter} instruction: {instruction.Name} cycles: {instruction.Cycles} opcode: {_opcode}");
                 byte additional_cycle1 = instruction.AddressingMode();
                 byte additional_cycle2 = instruction.OperationCode();
                 _cycles += (byte)(additional_cycle1 & additional_cycle2);

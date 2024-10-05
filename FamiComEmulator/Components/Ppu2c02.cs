@@ -218,7 +218,7 @@
             if (_scanline >= 0 && _scanline <= 239)
             {
                 // Background rendering
-                if (_cycle >= 1 && _cycle <= 256)
+                if (_cycle >= 1 && _cycle < 256)
                 {
                     // Update shifters
                     UpdateShifters();
@@ -901,7 +901,6 @@
             Color color = GetColourFromPaletteRam(finalPalette, finalPixel);
             int x = _cycle - 1;
             int y = _scanline;
-            Console.WriteLine($"Set x: {x} y: {y} pixel: {color}");
             _sprScreen.SetPixel(_cycle - 1, _scanline, color);
         }
 

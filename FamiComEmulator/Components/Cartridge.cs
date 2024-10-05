@@ -14,6 +14,7 @@ namespace FamiComEmulator.Components
         private readonly byte _numPRGRAM;
         private byte[] _PRGROMMemory;
         private byte[] _CHRROMMemory;
+        private byte[] _CHRRAMMemory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Cartridge"/> class by loading a NES ROM file.
@@ -107,6 +108,7 @@ namespace FamiComEmulator.Components
             {
                 // Some cartridges use CHR-RAM instead of CHR-ROM
                 _CHRROMMemory = Array.Empty<byte>();
+                _CHRRAMMemory = new byte[8192]; // Initialize CHR-RAM of 8KB
             }
 
             // Bit 0: Mirroring (0: horizontal, 1: vertical)
@@ -131,13 +133,30 @@ namespace FamiComEmulator.Components
         /// <summary>
         /// Reads a byte from the specified memory address.
         /// </summary>
-        /// <param name="address">The memory address to read from (0x8000 - 0xFFFF).</param>
+        /// <param name="address">The memory address to read from (0x0000 - 0xFFFF).</param>
         /// <param name="data">The byte value read from memory.</param>
         /// <returns>True if the read was successful; otherwise, false.</returns>
         public bool Read(ushort address, ref byte data)
         {
-            if (address >= 0x8000 && address <= 0xFFFF)
+            if (address >= 0x0000 && address <= 0x1FFF)
             {
+                // Read from CHR-ROM or CHR-RAM
+                if (_CHRROMMemory.Length > 0)
+                {
+                    // CHR-ROM is present
+                    data = _CHRROMMemory[address];
+                    return true;
+                }
+                else
+                {
+                    // CHR-RAM
+                    data = _CHRRAMMemory[address];
+                    return true;
+                }
+            }
+            else if (address >= 0x8000 && address <= 0xFFFF)
+            {
+                // Read from PRG-ROM for CPU
                 int bank = 0;
                 ushort offset = (ushort)(address - 0x8000);
 
@@ -161,15 +180,33 @@ namespace FamiComEmulator.Components
         }
 
         /// <summary>
-        /// Writes a byte to the specified memory address. Not supported for PRG-ROM.
+        /// Writes a byte to the specified memory address.
         /// </summary>
-        /// <param name="address">The memory address to write to (0x8000 - 0xFFFF).</param>
+        /// <param name="address">The memory address to write to (0x0000 - 0x1FFF).</param>
         /// <param name="data">The byte value to write to memory.</param>
-        /// <returns>Always false as PRG-ROM is read-only.</returns>
+        /// <returns>True if the write was successful; otherwise, false.</returns>
         public bool Write(ushort address, byte data)
         {
-            // PRG-ROM is typically read-only. Handle PRG-RAM if supported by the mapper.
-            // Currently, only Mapper 0 (NROM) is supported, which does not have PRG-RAM.
+            if (address >= 0x0000 && address <= 0x1FFF)
+            {
+                // Write to CHR-RAM
+                if (_CHRROMMemory.Length == 0)
+                {
+                    _CHRRAMMemory[address] = data;
+                    return true;
+                }
+                else
+                {
+                    // CHR-ROM is read-only
+                    return false;
+                }
+            }
+            else if (address >= 0x8000 && address <= 0xFFFF)
+            {
+                // PRG-ROM is typically read-only
+                return false;
+            }
+
             return false;
         }
 
