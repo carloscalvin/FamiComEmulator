@@ -231,16 +231,18 @@ namespace FamiComEmulator.Components
                     // Render pixel
                     ComposePixel();
                 }
-                else if (_cycle == 257)
-                {
-                    // End of background tile fetching, reset horizontal scroll
-                    IncrementScrollY();
-                    TransferAddressX();
-                }
                 else if (_cycle == 256)
                 {
                     // Increment vertical scroll
                     IncrementScrollY();
+                }
+                else if (_cycle == 257)
+                {
+                    // End of background tile fetching, reset horizontal scroll
+                    TransferAddressX();
+
+                    // **Load sprite shifters for the next scanline**
+                    LoadSpriteShifters();
                 }
                 else if (_cycle >= 321 && _cycle <= 336)
                 {
@@ -249,7 +251,7 @@ namespace FamiComEmulator.Components
                 }
 
                 // Sprite evaluation
-                if (_cycle == 257 && _scanline >= 0)
+                if (_cycle == 257)
                 {
                     // Evaluate sprites for next scanline
                     EvaluateSprites();
