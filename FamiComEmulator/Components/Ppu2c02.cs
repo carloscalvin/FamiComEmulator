@@ -391,6 +391,8 @@ namespace FamiComEmulator.Components
                         else
                             data = _nameTables[1][address & 0x03FF];
                         break;
+                    case Mirror.FourScreen:
+                        break;
                     default:
                         break;
                 }
@@ -441,6 +443,8 @@ namespace FamiComEmulator.Components
                         else
                             _nameTables[1][address & 0x03FF] = data;
                         break;
+                    case Mirror.FourScreen:
+                        break;
                     default:
                         break;
                 }
@@ -474,6 +478,8 @@ namespace FamiComEmulator.Components
                         return _nameTables[0][address & 0x03FF];
                     else
                         return _nameTables[1][address & 0x03FF];
+                case Mirror.FourScreen:
+                    return 0;
                 default:
                     return 0;
             }

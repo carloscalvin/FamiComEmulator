@@ -109,15 +109,23 @@ namespace FamiComEmulator.Components
                 _CHRROMMemory = Array.Empty<byte>();
             }
 
-            bool horizontal = (header.Mapper1 & 0x01) != 0;
-            bool vertical = (header.Mapper1 & 0x02) != 0;
+            // Bit 0: Mirroring (0: horizontal, 1: vertical)
+            // Bit 3: Four-screen VRAM
+            bool fourScreen = (header.Mapper1 & 0x08) != 0;
+            bool vertical = (header.Mapper1 & 0x01) != 0;
 
-            if (horizontal && !vertical)
-                Mirror = Mirror.Horizontal;
-            else if (vertical && !horizontal)
+            if (fourScreen)
+            {
+                Mirror = Mirror.FourScreen;
+            }
+            else if (vertical)
+            {
                 Mirror = Mirror.Vertical;
+            }
             else
+            {
                 Mirror = Mirror.Horizontal;
+            }
         }
 
         /// <summary>
