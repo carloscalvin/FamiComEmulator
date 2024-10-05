@@ -148,9 +148,30 @@ namespace FamiComEmulator.Tests.Components
         public void ReadRegister_ShouldBufferPPUData()
         {
             // Arrange
-            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
-            byte register = 0x07; // PPUDATA
             byte expectedData = 0xAB;
+            ushort ppuAddress = 0x2000;
+            byte register = 0x07; // PPUDATA
+            ICpu6502 cpu6502 = new Cpu6502();
+            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            // Create a mock CentralBus and set up the PPU
+            var bus = new CentralBus(cpu6502, ppu2c02);
+
+            // Mock the Cartridge to return expectedData when reading from ppuAddress
+            var mockCartridge = new Mock<ICartridge>();
+            mockCartridge.Setup(c => c.Read(It.IsAny<ushort>(), ref It.Ref<byte>.IsAny))
+                .Callback((ushort address, ref byte data) =>
+                {
+                    if (address == (ppuAddress & 0x3FFF))
+                    {
+                        data = expectedData;
+                    }
+                })
+                .Returns(true);
+            bus.AddCartridge(mockCartridge.Object);
+
+            // Set PpuAddress to the target address
+            ppu2c02.WriteRegister(0x06, (byte)((ppuAddress >> 8) & 0xFF)); // High byte
+            ppu2c02.WriteRegister(0x06, (byte)(ppuAddress & 0xFF));        // Low byte
 
             // Act
             byte firstRead = ppu2c02.ReadRegister(register); // Should return bufferedData (initially 0)
