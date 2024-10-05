@@ -239,15 +239,28 @@ namespace FamiComEmulator.Components
             _vblank = false;
             _nmiOccurred = false;
 
-            Array.Clear(_patternTables, 0, _patternTables.Length);
-            Array.Clear(_nameTables, 0, _nameTables.Length);
+            for (int i = 0; i < _patternTables.Length; i++)
+            {
+                if (_patternTables[i] != null)
+                {
+                    Array.Clear(_patternTables[i], 0, _patternTables[i].Length);
+                }
+            }
+
+            for (int i = 0; i < _nameTables.Length; i++)
+            {
+                if (_nameTables[i] != null)
+                {
+                    Array.Clear(_nameTables[i], 0, _nameTables[i].Length);
+                }
+            }
+
             Array.Clear(_palettes, 0, _palettes.Length);
             Array.Clear(_oam, 0, _oam.Length);
 
             _vramAddress.Reset();
             _tramAddress.Reset();
 
-            // Reset shifters
             _bgShifterPatternLo = 0;
             _bgShifterPatternHi = 0;
             _bgShifterAttribLo = 0;
