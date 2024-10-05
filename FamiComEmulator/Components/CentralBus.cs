@@ -1,12 +1,12 @@
 ﻿namespace FamiComEmulator.Components
 {
     /// <summary>
-    /// Represents the central bus in the NES emulator, handling communication between CPU, RAM, and Cartridge.
+    /// Represents the central bus in the NES emulator, handling communication between CPU, PPU, RAM, and Cartridge.
     /// </summary>
     public class CentralBus : ICentralBus
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CentralBus"/> class with the specified CPU.
+        /// Initializes a new instance of the <see cref="CentralBus"/> class with the specified CPU and PPU.
         /// </summary>
         /// <param name="cpu">The CPU component to connect to the bus.</param>
         /// <param name="ppu">The PPU component to connect to the bus.</param>
@@ -69,35 +69,41 @@
         {
             byte data = 0x00;
 
-            // Handle PPU registers (0x2000 - 0x2007)
-            if (address >= 0x2000 && address <= 0x2007)
-            {
-                data = Ppu.ReadRegister((byte)address);
-                return data;
-            }
-
-            // Attempt to read from the cartridge first
-            if (Cartridge != null && Cartridge.Read(address, ref data))
-            {
-                return data;
-            }
-
-            // Handle RAM addresses (0x0000 - 0x1FFF)
             if (address >= 0x0000 && address <= 0x1FFF)
             {
+                // Handle internal RAM (0x0000 - 0x1FFF), mirrored every 2KB
                 data = Ram.Read(address);
                 return data;
             }
-
-            // Handle PPU memory reads (0x0000 - 0x3FFF)
-            if (address >= 0x0000 && address <= 0x3FFF)
+            else if (address >= 0x2000 && address <= 0x3FFF)
             {
-                data = Ppu.ReadPpuMemory((ushort)(address & 0x3FFF));
+                // Handle PPU registers (0x2000 - 0x3FFF), mirrored every 8 bytes
+                data = Ppu.ReadRegister((byte)(address & 0x0007));
                 return data;
             }
+            else if (address == 0x4014)
+            {
+                // OAM DMA access (typically write-only, reading returns 0)
+                data = 0x00;
+                return data;
+            }
+            else if (address >= 0x4000 && address <= 0x4017)
+            {
+                // Handle APU and I/O registers (0x4000 - 0x4017)
+                // Placeholder for future implementation
+                data = 0x00;
+                return data;
+            }
+            else if (address >= 0x4020 && address <= 0xFFFF)
+            {
+                // Handle cartridge space (0x4020 - 0xFFFF)
+                if (Cartridge != null && Cartridge.Read(address, ref data))
+                {
+                    return data;
+                }
+            }
 
-            // TODO: Handle other memory ranges (IO registers, etc.)
-
+            // Default return value if address is not handled
             return data;
         }
 
@@ -108,40 +114,40 @@
         /// <param name="data">The byte value to write to memory.</param>
         public void Write(ushort address, byte data)
         {
-            if (address == 0x4014)
-            {
-                // DMA de OAM
-                Ppu.PerformOamDma(data);
-                return;
-            }
-            // Handle PPU registers (0x2000 - 0x2007)
-            if (address >= 0x2000 && address <= 0x2007)
-            {
-                Ppu.WriteRegister((byte)address, data);
-                return;
-            }
-
-            // Attempt to write to the cartridge first
-            if (Cartridge != null && Cartridge.Write(address, data))
-            {
-                return;
-            }
-
-            // Handle RAM addresses (0x0000 - 0x1FFF)
             if (address >= 0x0000 && address <= 0x1FFF)
             {
+                // Handle internal RAM (0x0000 - 0x1FFF), mirrored every 2KB
                 Ram.Write(address, data);
                 return;
             }
-
-            // Handle PPU memory writes (0x0000 - 0x3FFF)
-            if (address >= 0x0000 && address <= 0x3FFF)
+            else if (address >= 0x2000 && address <= 0x3FFF)
             {
-                Ppu.WritePpuMemory((ushort)(address & 0x3FFF), data);
+                // Handle PPU registers (0x2000 - 0x3FFF), mirrored every 8 bytes
+                Ppu.WriteRegister((byte)(address & 0x0007), data);
                 return;
             }
+            else if (address == 0x4014)
+            {
+                // Handle OAM DMA access
+                Ppu.PerformOamDma(data);
+                return;
+            }
+            else if (address >= 0x4000 && address <= 0x4017)
+            {
+                // Handle APU and I/O registers (0x4000 - 0x4017)
+                // Placeholder for future implementation
+                return;
+            }
+            else if (address >= 0x4020 && address <= 0xFFFF)
+            {
+                // Handle cartridge space (0x4020 - 0xFFFF)
+                if (Cartridge != null && Cartridge.Write(address, data))
+                {
+                    return;
+                }
+            }
 
-            // TODO: Handle other memory ranges (IO registers, etc.)
+            // No operation if address is not handled
         }
 
         /// <summary>

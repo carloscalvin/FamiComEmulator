@@ -343,7 +343,21 @@ namespace FamiComEmulator.Components
             }
         }
 
-        public byte ReadPpuMemory(ushort address)
+        public void PerformOamDma(byte page)
+        {
+            ushort address = (ushort)(page << 8);
+            for (int i = 0; i < 256; i++)
+            {
+                byte data = _bus.Read(address++);
+                _oam[i] = data;
+            }
+        }
+
+        #endregion
+
+        #region private methods
+
+        private byte ReadPpuMemory(ushort address)
         {
             byte data = 0x00;
             address &= 0x3FFF;
@@ -394,7 +408,7 @@ namespace FamiComEmulator.Components
             return data;
         }
 
-        public void WritePpuMemory(ushort address, byte data)
+        private void WritePpuMemory(ushort address, byte data)
         {
             address &= 0x3FFF;
 
@@ -441,20 +455,6 @@ namespace FamiComEmulator.Components
                 _palettes[address] = data;
             }
         }
-
-        public void PerformOamDma(byte page)
-        {
-            ushort address = (ushort)(page << 8);
-            for (int i = 0; i < 256; i++)
-            {
-                byte data = _bus.Read(address++);
-                _oam[i] = data;
-            }
-        }
-
-        #endregion
-
-        #region private methods
 
         private byte GetNameTable(ushort address)
         {

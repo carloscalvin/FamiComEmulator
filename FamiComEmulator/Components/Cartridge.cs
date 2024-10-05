@@ -135,23 +135,18 @@ namespace FamiComEmulator.Components
 
                 if (_numPRGROM == 1)
                 {
-                    // Single 16KB bank is mirrored to 0x8000-0xFFFF
+                    // Single 16KB bank is mirrored across 0x8000-0xFFFF
                     offset &= 0x3FFF;
                 }
                 else
                 {
-                    // Multiple banks (assuming 32KB for Mapper 0)
+                    // Two 16KB banks
                     bank = (address >= 0xC000) ? 1 : 0;
                     offset = (ushort)(address - (bank == 0 ? 0x8000 : 0xC000));
                 }
 
                 data = _PRGROMMemory[(bank * 16384) + offset];
                 return true;
-            }
-            else if (address >= 0x0000 && address <= 0x1FFF)
-            {
-                /*data = _CHRROMMemory[address & 0x1FFF];
-                return true;*/
             }
 
             return false;

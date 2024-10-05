@@ -20,8 +20,6 @@
         void Reset();
         void WriteRegister(byte register, byte data);
         byte ReadRegister(byte register);
-        void WritePpuMemory(ushort address, byte data);
-        byte ReadPpuMemory(ushort address);
         void PerformOamDma(byte page);
         void AddCentralBus(CentralBus bus);
     }
