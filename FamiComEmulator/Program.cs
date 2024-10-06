@@ -5,7 +5,7 @@
         static void Main(string[] args)
         {
             // Create the PPU renderer (assuming it's a form-based renderer)
-            IPpuRenderer renderer = new PpuRenderer(256, 240);
+            IPpuRenderer renderer = new PpuRenderer(3);
 
             // Start the renderer in a separate thread
             Thread rendererThread = new Thread(() =>

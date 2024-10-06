@@ -11,14 +11,16 @@ public class PpuRenderer : IPpuRenderer
 
     private readonly int _width;
     private readonly int _height;
+    private int _scale;
 
     private InputHandler _inputHandler;
 
-    public PpuRenderer(int width, int height)
+    public PpuRenderer(int scale = 1)
     {
-        _width = width;
-        _height = height;
-        _bitmap = new Bitmap(_width, _height);
+        _width = 256;
+        _height = 240;
+        _scale = scale;
+        _bitmap = new Bitmap(_width * _scale, _height * _scale);
     }
 
     public void SetPixel(int x, int y, Color color)
@@ -27,7 +29,15 @@ public class PpuRenderer : IPpuRenderer
         {
             if (x >= 0 && x < _width && y >= 0 && y < _height)
             {
-                _bitmap.SetPixel(x, y, color);
+                for (int i = 0; i < _scale; i++)
+                {
+                    for (int j = 0; j < _scale; j++)
+                    {
+                        int scaledX = x * _scale + i;
+                        int scaledY = y * _scale + j;
+                        _bitmap.SetPixel(scaledX, scaledY, color);
+                    }
+                }
             }
         }
     }
@@ -47,14 +57,14 @@ public class PpuRenderer : IPpuRenderer
     {
         _form = new Form();
         _form.Text = "NES Emulator";
-        _form.ClientSize = new Size(_width, _height + 50); // Extra space for the button
+        _form.ClientSize = new Size(_width * _scale, _height * _scale + 50); // Extra space for the button
         _form.FormBorderStyle = FormBorderStyle.FixedSingle;
         _form.MaximizeBox = false;
 
         _pictureBox = new PictureBox();
         _pictureBox.Dock = DockStyle.Top;
-        _pictureBox.Height = _height;
-        _pictureBox.Image = new Bitmap(_width, _height);
+        _pictureBox.Height = _height * _scale;
+        _pictureBox.Image = new Bitmap(_width * _scale, _height * _scale);
         _form.Controls.Add(_pictureBox);
 
         // Add Load ROM button

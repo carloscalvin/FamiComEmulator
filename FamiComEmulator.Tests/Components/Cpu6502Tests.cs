@@ -42,7 +42,7 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             ICpu6502 cpu6502 = new Cpu6502();
-            IPpu2c02 ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            IPpu2c02 ppu = new Ppu2c02(new PpuRenderer());
             ICentralBus bus = new CentralBus(cpu6502, ppu);
             bus.AddCartridge(new Cartridge(_ldaRomPath));
             bus.Reset();
@@ -68,7 +68,7 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             ICpu6502 cpu6502 = new Cpu6502();
-            IPpu2c02 ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            IPpu2c02 ppu = new Ppu2c02(new PpuRenderer());
             ICentralBus bus = new CentralBus(cpu6502, ppu);
             bus.AddCartridge(new Cartridge(_adcRomPath));
             bus.Reset();
@@ -96,7 +96,7 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             ICpu6502 cpu6502 = new Cpu6502();
-            IPpu2c02 ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            IPpu2c02 ppu = new Ppu2c02(new PpuRenderer());
             ICentralBus bus = new CentralBus(cpu6502, ppu);
             bus.AddCartridge(new Cartridge(_multiplicationRomPath));
             bus.Reset();
@@ -131,7 +131,7 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             ICpu6502 cpu6502 = new Cpu6502();
-            IPpu2c02 ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            IPpu2c02 ppu = new Ppu2c02(new PpuRenderer());
             ICentralBus bus = new CentralBus(cpu6502, ppu);
             bus.AddCartridge(new Cartridge(_nestestRomPath));
 

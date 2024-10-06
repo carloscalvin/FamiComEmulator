@@ -8,7 +8,7 @@ namespace FamiComEmulator.Tests.Components
 
         public CentralBusTests()
         {
-            _bus = new CentralBus(new Cpu6502(), new Ppu2c02(new PpuRenderer(256, 240)));
+            _bus = new CentralBus(new Cpu6502(), new Ppu2c02(new PpuRenderer()));
         }
 
         [Fact]

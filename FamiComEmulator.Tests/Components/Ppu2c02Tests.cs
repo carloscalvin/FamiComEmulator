@@ -32,7 +32,7 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             Cpu6502 cpu6502 = new Cpu6502();
-            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             ICentralBus bus = new CentralBus(cpu6502, ppu2c02);
             bus.AddCartridge(new Cartridge(_nestestRomPath));
 
@@ -70,7 +70,7 @@ namespace FamiComEmulator.Tests.Components
         public void Reset_ShouldInitializeRegistersAndState()
         {
             // Arrange
-            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             ppu2c02.Control = 0xFF;
             ppu2c02.Mask = 0xFF;
             ppu2c02.OamAddress = 0xFF;
@@ -98,7 +98,7 @@ namespace FamiComEmulator.Tests.Components
         public void WriteRegister_ShouldUpdateControlRegister()
         {
             // Arrange
-            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             byte register = 0x00; // PPUCTRL
             byte data = 0x80;
 
@@ -113,7 +113,7 @@ namespace FamiComEmulator.Tests.Components
         public void ReadRegister_ShouldReturnStatusAndClearVBlank()
         {
             // Arrange
-            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             byte register = 0x02; // PPUSTATUS
             ppu2c02.Status = 0x80; // VerticalBlank flag set
 
@@ -129,7 +129,7 @@ namespace FamiComEmulator.Tests.Components
         public void WriteRegister_ShouldHandlePPUScrollToggle()
         {
             // Arrange
-            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             byte register = 0x05; // PPUSCROLL
             byte scrollX = 0x10;
             byte scrollY = 0x20;
@@ -151,7 +151,7 @@ namespace FamiComEmulator.Tests.Components
             ushort ppuAddress = 0x2000;
             byte register = 0x07; // PPUDATA
             ICpu6502 cpu6502 = new Cpu6502();
-            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             // Create a mock CentralBus and set up the PPU
             var bus = new CentralBus(cpu6502, ppu2c02);
 
@@ -191,7 +191,7 @@ namespace FamiComEmulator.Tests.Components
             mockCartridge.Setup(c => c.Write(It.IsAny<ushort>(), It.IsAny<byte>()))
                          .Returns(false);
             ICpu6502 cpu6502 = new Cpu6502();
-            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             CentralBus bus = new CentralBus(cpu6502, ppu2c02);
             bus.AddCartridge(mockCartridge.Object);
             int initialCycle = ppu2c02.PpuX;
@@ -210,7 +210,7 @@ namespace FamiComEmulator.Tests.Components
         {
             // Arrange
             Mock<ICpu6502> mockCpu6502 = new Mock<ICpu6502>();
-            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             ICentralBus bus = new CentralBus(mockCpu6502.Object, ppu2c02);
             Mock<ICartridge> mockCartridge = new Mock<ICartridge>();
             mockCartridge.Setup(c => c.Read(It.IsAny<ushort>(), ref It.Ref<byte>.IsAny))
@@ -237,7 +237,7 @@ namespace FamiComEmulator.Tests.Components
         public void Clock_ShouldClearVBlankOnPreRenderScanline()
         {
             // Arrange
-            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             ppu2c02.Status |= (byte)Ppu2c02.PpuStatusFlags.VerticalBlank;
             ppu2c02._cycle = 0;
             ppu2c02._scanline = -1; // Pre-render scanline
@@ -253,7 +253,7 @@ namespace FamiComEmulator.Tests.Components
         public void Clock_ShouldSetVBlankOnScanline241()
         {
             // Arrange
-            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             ppu2c02._cycle = 0;
             ppu2c02._scanline = 241;
 
@@ -274,7 +274,7 @@ namespace FamiComEmulator.Tests.Components
             mockCartridge.Setup(c => c.Write(It.IsAny<ushort>(), It.IsAny<byte>()))
                          .Returns(false);
             ICpu6502 cpu6502 = new Cpu6502();
-            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer(256, 240));
+            Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             CentralBus bus = new CentralBus(cpu6502, ppu2c02);
             bus.AddCartridge(mockCartridge.Object);
             byte page = 0x02;
@@ -337,7 +337,7 @@ namespace FamiComEmulator.Tests.Components
         public void IncrementScrollX_ShouldIncrementCoarseX()
         {
             // Arrange
-            var ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            var ppu = new Ppu2c02(new PpuRenderer());
             ppu._vramAddress.CoarseX = 5;
             ppu._vramAddress.NametableX = false;
             ppu._renderBackground = true;
@@ -354,7 +354,7 @@ namespace FamiComEmulator.Tests.Components
         public void IncrementScrollY_ShouldIncrementFineY()
         {
             // Arrange
-            var ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            var ppu = new Ppu2c02(new PpuRenderer());
             ppu._vramAddress.FineY = 5;
             ppu._vramAddress.CoarseY = 10;
             ppu._vramAddress.NametableY = false;
@@ -373,7 +373,7 @@ namespace FamiComEmulator.Tests.Components
         public void TransferAddressX_ShouldCopyHorizontalScroll()
         {
             // Arrange
-            var ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            var ppu = new Ppu2c02(new PpuRenderer());
             ppu._tramAddress.CoarseX = 10;
             ppu._tramAddress.NametableX = true;
             ppu._vramAddress.CoarseX = 5;
@@ -392,7 +392,7 @@ namespace FamiComEmulator.Tests.Components
         public void TransferAddressY_ShouldCopyVerticalScroll()
         {
             // Arrange
-            var ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            var ppu = new Ppu2c02(new PpuRenderer());
             ppu._tramAddress.FineY = 3;
             ppu._tramAddress.CoarseY = 12;
             ppu._tramAddress.NametableY = true;
@@ -414,7 +414,7 @@ namespace FamiComEmulator.Tests.Components
         public void ComposePixel_ShouldSetSpriteZeroHitFlag()
         {
             // Arrange
-            var ppu = new Ppu2c02(new PpuRenderer(256, 240));
+            var ppu = new Ppu2c02(new PpuRenderer());
             ppu.Mask = (byte)(Ppu2c02.PpuMaskFlags.RenderBackground | Ppu2c02.PpuMaskFlags.RenderSprites);
             ppu.UpdateRenderFlags();
 
