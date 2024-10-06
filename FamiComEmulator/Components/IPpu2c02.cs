@@ -6,8 +6,6 @@
         byte Control { get; set; }
         byte Mask { get; set; }
         byte Status { get; set; }
-        byte OamAddress { get; set; }
-        byte OamData { get; set; }
         byte ScrollX { get; }
         byte ScrollY { get; }
         ushort PpuAddress { get; set; }

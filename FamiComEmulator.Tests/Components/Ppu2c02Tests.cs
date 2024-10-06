@@ -73,8 +73,6 @@ namespace FamiComEmulator.Tests.Components
             IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             ppu2c02.Control = 0xFF;
             ppu2c02.Mask = 0xFF;
-            ppu2c02.OamAddress = 0xFF;
-            ppu2c02.OamData = 0xFF;
             ppu2c02.PpuAddress = 0xFFFF;
             ppu2c02.PpuData = 0xFF;
             ppu2c02.PpuX = 100;
@@ -87,7 +85,6 @@ namespace FamiComEmulator.Tests.Components
             Assert.Equal(0x00, ppu2c02.Control);
             Assert.Equal(0x00, ppu2c02.Mask);
             Assert.Equal(0x00, ppu2c02.Status);
-            Assert.Equal(0x00, ppu2c02.OamData);
             Assert.Equal(0x0000, ppu2c02.PpuAddress);
             Assert.Equal(0x00, ppu2c02.PpuData);
             Assert.Equal(0, ppu2c02.PpuX);

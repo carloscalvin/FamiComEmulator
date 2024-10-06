@@ -8,17 +8,6 @@
         public byte Control { get; set; }
         public byte Mask { get; set; }
         public byte Status { get; set; }
-        public byte OamAddress { get; set; }
-        public byte OamData
-        {
-            get => _oam[OamAddress];
-            set
-            {
-                _oam[OamAddress] = value;
-                // Increment OAM address after write
-                OamAddress++;
-            }
-        }
         public byte ScrollX { get; private set; }
         public byte ScrollY { get; private set; }
         public ushort PpuAddress { get; set; }
@@ -60,6 +49,7 @@
         };
         private byte[] _palettes = new byte[0x20];        // 32 bytes
         internal byte[] _oam = new byte[0x100];            // Object Attribute Memory
+        private byte _oamAddress { get; set; }
 
         // Internal state variables
         internal int _cycle;
@@ -284,8 +274,7 @@
             Control = 0;
             Mask = 0;
             Status = 0;
-            OamAddress = 0;
-            OamData = 0;
+            _oamAddress = 0;
             ScrollX = 0;
             ScrollY = 0;
             PpuAddress = 0;
@@ -338,10 +327,10 @@
                     UpdateGrayscaleFlag();
                     break;
                 case 0x03: // OAMADDR
-                    OamAddress = data;
+                    _oamAddress = data;
                     break;
                 case 0x04: // OAMDATA
-                    OamData = data;
+                    _oam[_oamAddress] = data;
                     break;
                 case 0x05: // PPUSCROLL
                     if (_writeToggle == 0)
@@ -376,9 +365,6 @@
                     WritePpuMemory(_vramAddress.Raw, data);
                     _vramAddress.Raw += (ushort)(((Control & 0x04) != 0) ? 32 : 1);
                     break;
-                case 0x14: // OAMDMA
-                    PerformOamDma(data);
-                    break;
                 default:
                     break;
             }
@@ -396,7 +382,7 @@
                     _writeToggle = 0; // Reset scroll and address toggles
                     return status;
                 case 0x04: // OAMDATA
-                    return OamData;
+                    return _oam[_oamAddress];
                 case 0x07: // PPUDATA
                     byte data = _ppuDataBuffer;
                     _ppuDataBuffer = ReadPpuMemory(_vramAddress.Raw);
