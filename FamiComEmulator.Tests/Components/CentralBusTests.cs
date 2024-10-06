@@ -97,5 +97,72 @@ namespace FamiComEmulator.Tests.Components
             Assert.Equal(_bus.Read(0x07FF), _bus.Read(0x1FFF));
         }
 
+        // Test for writing and reading controller 1 status
+        [Fact]
+        public void CentralBus_WriteAndRead_Controller1()
+        {
+            // Arrange
+            ushort address = 0x4016;
+            _bus.Controller[0] = 0x80; // A Button pressed (bit 7)
+
+            // Act
+            _bus.Write(address, 0x01);  // Simulate reset write
+            byte readValue = _bus.Read(address); // Read controller state
+
+            // Assert
+            Assert.Equal(0x01, readValue);  // A button should be active
+        }
+
+        // Test for writing and reading multiple button presses on controller 1
+        [Fact]
+        public void CentralBus_WriteAndRead_Controller1_MultipleReads()
+        {
+            // Arrange
+            ushort address = 0x4016;
+            _bus.Controller[0] = 0xC0; // A and B Buttons pressed (bits 7 and 6)
+
+            // Act
+            _bus.Write(address, 0x01);  // Simulate reset write
+            byte readA = _bus.Read(address); // Read A button
+            byte readB = _bus.Read(address); // Read B button
+
+            // Assert
+            Assert.Equal(0x01, readA);  // A button should be active
+            Assert.Equal(0x01, readB);  // B button should be active
+        }
+
+        // Test for writing and reading controller 2 status
+        [Fact]
+        public void CentralBus_WriteAndRead_Controller2()
+        {
+            // Arrange
+            ushort address = 0x4017;
+            _bus.Controller[1] = 0x80; // A Button pressed (bit 7)
+
+            // Act
+            _bus.Write(address, 0x01);  // Simulate reset write
+            byte readValue = _bus.Read(address); // Read controller state
+
+            // Assert
+            Assert.Equal(0x01, readValue);  // A button should be active
+        }
+
+        // Test for writing and reading multiple button presses on controller 2
+        [Fact]
+        public void CentralBus_WriteAndRead_Controller2_MultipleReads()
+        {
+            // Arrange
+            ushort address = 0x4017;
+            _bus.Controller[1] = 0xC0; // A and B Buttons pressed (bits 7 and 6)
+
+            // Act
+            _bus.Write(address, 0x01);  // Simulate reset write
+            byte readA = _bus.Read(address); // Read A button
+            byte readB = _bus.Read(address); // Read B button
+
+            // Assert
+            Assert.Equal(0x01, readA);  // A button should be active
+            Assert.Equal(0x01, readB);  // B button should be active
+        }
     }
 }

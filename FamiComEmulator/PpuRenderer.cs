@@ -12,6 +12,8 @@ public class PpuRenderer : IPpuRenderer
     private readonly int _width;
     private readonly int _height;
 
+    private InputHandler _inputHandler;
+
     public PpuRenderer(int width, int height)
     {
         _width = width;
@@ -62,6 +64,11 @@ public class PpuRenderer : IPpuRenderer
         _loadRomButton.Height = 40;
         _loadRomButton.Click += LoadRomButton_Click;
         _form.Controls.Add(_loadRomButton);
+
+        // Register key events
+        _form.KeyDown += Form_KeyDown;
+        _form.KeyUp += Form_KeyUp;
+        _form.KeyPreview = true; // Important to receive key events
 
         // Start a timer to refresh the picture box periodically
         System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
@@ -121,6 +128,9 @@ public class PpuRenderer : IPpuRenderer
         // Reset the system
         _bus.Reset();
 
+        // Initialize InputHandler with bus
+        _inputHandler = new InputHandler(_bus);
+
         // Start the emulation loop in a separate thread
         Thread emulationThread = new Thread(() =>
         {
@@ -129,6 +139,17 @@ public class PpuRenderer : IPpuRenderer
                 _bus.Clock(); // Clock the CPU and PPU for each cycle
             }
         });
+        emulationThread.IsBackground = true;
         emulationThread.Start();
+    }
+
+    private void Form_KeyDown(object sender, KeyEventArgs e)
+    {
+        _inputHandler?.KeyDown(e.KeyCode);
+    }
+
+    private void Form_KeyUp(object sender, KeyEventArgs e)
+    {
+        _inputHandler?.KeyUp(e.KeyCode);
     }
 }

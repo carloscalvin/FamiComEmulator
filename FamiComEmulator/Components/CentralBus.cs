@@ -5,6 +5,8 @@
     /// </summary>
     public class CentralBus : ICentralBus
     {
+        private byte[] _controllerState = new byte[2];
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CentralBus"/> class with the specified CPU and PPU.
         /// </summary>
@@ -17,6 +19,7 @@
             Ram = new Ram();
             Cpu.AddCentralBus(this);
             Ppu.AddCentralBus(this);
+            Controller = new byte[2];
         }
 
         /// <summary>
@@ -38,6 +41,8 @@
         /// Gets the system RAM connected to the central bus.
         /// </summary>
         public Ram Ram { get; }
+
+        public byte[] Controller { get; internal set; }
 
         /// <summary>
         /// Adds a cartridge to the central bus.
@@ -87,11 +92,11 @@
                 data = 0x00;
                 return data;
             }
-            else if (address >= 0x4000 && address <= 0x4017)
+            else if (address >= 0x4016 && address <= 0x4017)
             {
-                // Handle APU and I/O registers (0x4000 - 0x4017)
-                // Placeholder for future implementation
-                data = 0x00;
+                data = (byte)((_controllerState[address & 0x0001] & 0x80) > 0 ? 0x01 : 0x00);
+                _controllerState[address & 0x0001] <<= 1;
+
                 return data;
             }
             else if (address >= 0x4020 && address <= 0xFFFF)
@@ -132,10 +137,9 @@
                 Ppu.PerformOamDma(data);
                 return;
             }
-            else if (address >= 0x4000 && address <= 0x4017)
+            else if (address >= 0x4016 && address <= 0x4017)
             {
-                // Handle APU and I/O registers (0x4000 - 0x4017)
-                // Placeholder for future implementation
+                _controllerState[address & 0x0001] = Controller[address & 0x0001];
                 return;
             }
             else if (address >= 0x4020 && address <= 0xFFFF)

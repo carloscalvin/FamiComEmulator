@@ -2,6 +2,7 @@
 {
     public interface ICentralBus
     {
+        byte[] Controller { get; }
         ICpu6502 Cpu { get; }
         Ram Ram { get; }
         IPpu2c02 Ppu { get; }
