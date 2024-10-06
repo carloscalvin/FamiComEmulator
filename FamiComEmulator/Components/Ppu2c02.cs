@@ -52,6 +52,7 @@
         private ICentralBus _bus;
 
         // PPU Memory
+        private byte _openBusLatch;
         private byte[][] _nameTables = new byte[2][]
         {
             new byte[0x0400], // Name Table 0
@@ -322,6 +323,7 @@
 
         public void WriteRegister(byte register, byte data)
         {
+            _openBusLatch = data;
             switch (register)
             {
                 case 0x00: // PPUCTRL
@@ -386,6 +388,8 @@
         {
             switch (register)
             {
+                case 0x01: // PPUMASK
+                    return _openBusLatch;
                 case 0x02: // PPUSTATUS
                     byte status = (byte)(Status & 0xE0 | (_ppuDataBuffer & 0x1F));
                     Status &= 0x7F; // Clear VBlank flag after reading
