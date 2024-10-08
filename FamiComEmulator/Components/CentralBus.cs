@@ -1,21 +1,24 @@
 ﻿namespace FamiComEmulator.Components
 {
     /// <summary>
-    /// Represents the central bus in the NES emulator, handling communication between CPU, PPU, RAM, and Cartridge.
+    /// Represents the central bus in the NES emulator, handling communication between CPU, PPU, APU, RAM, and Cartridge.
     /// </summary>
     public class CentralBus : ICentralBus
     {
         private byte[] _controllerState = new byte[2];
+        private int clockCounter = 0;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CentralBus"/> class with the specified CPU and PPU.
+        /// Initializes a new instance of the <see cref="CentralBus"/> class with the specified CPU, PPU, and APU.
         /// </summary>
         /// <param name="cpu">The CPU component to connect to the bus.</param>
         /// <param name="ppu">The PPU component to connect to the bus.</param>
-        public CentralBus(ICpu6502 cpu, IPpu2c02 ppu)
+        /// <param name="apu">The APU component to connect to the bus.</param>
+        public CentralBus(ICpu6502 cpu, IPpu2c02 ppu, IApu apu)
         {
             Cpu = cpu;
             Ppu = ppu;
+            Apu = apu;
             Ram = new Ram();
             Cpu.AddCentralBus(this);
             Ppu.AddCentralBus(this);
@@ -31,6 +34,11 @@
         /// Gets the PPU connected to the central bus.
         /// </summary>
         public IPpu2c02 Ppu { get; }
+
+        /// <summary>
+        /// Gets the APU connected to the central bus.
+        /// </summary>
+        public IApu Apu { get; }
 
         /// <summary>
         /// Gets the Cartridge connected to the central bus.
@@ -58,11 +66,13 @@
         /// </summary>
         public void Clock()
         {
-            Cpu?.Clock();
-            for (int i = 0; i < 3; i++)
+            Ppu.Clock();
+            if (clockCounter % 3 == 0)
             {
-                Ppu?.Clock();
+                Cpu.Clock();
+                Apu.Clock();
             }
+            clockCounter++;
         }
 
         /// <summary>
@@ -131,10 +141,22 @@
                 Ppu.WriteRegister((byte)(address & 0x0007), data);
                 return;
             }
+            else if (address >= 0x4000 && address < 0x4013)
+            {
+                // Write to APU registers ($4000 - $4013)
+                Apu.Write(address, data);
+                return;
+            }
             else if (address == 0x4014)
             {
                 // Handle OAM DMA access
                 Ppu.PerformOamDma(data);
+                return;
+            }
+            else if (address == 0x4015)
+            {
+                // Write to APU status register
+                Apu.Write(address, data);
                 return;
             }
             else if (address >= 0x4016 && address <= 0x4017)
@@ -161,6 +183,8 @@
         {
             Cpu?.Reset();
             Ppu?.Reset();
+            Apu?.Reset();
+            clockCounter = 0;
         }
     }
 }

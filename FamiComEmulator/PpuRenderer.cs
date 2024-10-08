@@ -14,6 +14,7 @@ public class PpuRenderer : IPpuRenderer
     private int _scale;
 
     private InputHandler _inputHandler;
+    private IAudioProcessor _audioProcessor;
 
     public PpuRenderer(int scale = 1)
     {
@@ -124,12 +125,13 @@ public class PpuRenderer : IPpuRenderer
             return;
         }
 
-        // Create the CPU and PPU
+        // Create the CPU, PPU and APU
         ICpu6502 cpu = new Cpu6502();
         IPpu2c02 ppu = new Ppu2c02(this);
+        IApu apu = new Apu();
 
         // Create the central bus
-        _bus = new CentralBus(cpu, ppu);
+        _bus = new CentralBus(cpu, ppu, apu);
 
         // Load a cartridge
         ICartridge cartridge = new Cartridge(romPath);
@@ -141,12 +143,18 @@ public class PpuRenderer : IPpuRenderer
         // Initialize InputHandler with bus
         _inputHandler = new InputHandler(_bus);
 
+        // Initialize the audio processor
+        _audioProcessor = new AudioProcessor();
+
         // Start the emulation loop in a separate thread
         Thread emulationThread = new Thread(() =>
         {
             while (true)
             {
-                _bus.Clock(); // Clock the CPU and PPU for each cycle
+                _bus.Clock(); // Clock the CPU, PPU, and APU for each cycle
+
+                // Process the current sample from the APU
+                _audioProcessor.ProcessSample(apu.CurrentSample);
             }
         });
         emulationThread.IsBackground = true;

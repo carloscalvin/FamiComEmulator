@@ -33,7 +33,8 @@ namespace FamiComEmulator.Tests.Components
             // Arrange
             Cpu6502 cpu6502 = new Cpu6502();
             Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
-            ICentralBus bus = new CentralBus(cpu6502, ppu2c02);
+            IApu apu = new Apu();
+            ICentralBus bus = new CentralBus(cpu6502, ppu2c02, apu);
             bus.AddCartridge(new Cartridge(_nestestRomPath));
 
             // Parse the nestest log
@@ -150,7 +151,8 @@ namespace FamiComEmulator.Tests.Components
             ICpu6502 cpu6502 = new Cpu6502();
             IPpu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
             // Create a mock CentralBus and set up the PPU
-            var bus = new CentralBus(cpu6502, ppu2c02);
+            IApu apu = new Apu();
+            var bus = new CentralBus(cpu6502, ppu2c02, apu);
 
             // Mock the Cartridge to return expectedData when reading from ppuAddress
             var mockCartridge = new Mock<ICartridge>();
@@ -189,7 +191,8 @@ namespace FamiComEmulator.Tests.Components
                          .Returns(false);
             ICpu6502 cpu6502 = new Cpu6502();
             Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
-            CentralBus bus = new CentralBus(cpu6502, ppu2c02);
+            IApu apu = new Apu();
+            CentralBus bus = new CentralBus(cpu6502, ppu2c02, apu);
             bus.AddCartridge(mockCartridge.Object);
             int initialCycle = ppu2c02.PpuX;
             int initialScanline = ppu2c02.PpuY;
@@ -208,7 +211,8 @@ namespace FamiComEmulator.Tests.Components
             // Arrange
             Mock<ICpu6502> mockCpu6502 = new Mock<ICpu6502>();
             Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
-            ICentralBus bus = new CentralBus(mockCpu6502.Object, ppu2c02);
+            IApu apu = new Apu();
+            ICentralBus bus = new CentralBus(mockCpu6502.Object, ppu2c02, apu);
             Mock<ICartridge> mockCartridge = new Mock<ICartridge>();
             mockCartridge.Setup(c => c.Read(It.IsAny<ushort>(), ref It.Ref<byte>.IsAny))
                          .Returns(false);
@@ -272,7 +276,8 @@ namespace FamiComEmulator.Tests.Components
                          .Returns(false);
             ICpu6502 cpu6502 = new Cpu6502();
             Ppu2c02 ppu2c02 = new Ppu2c02(new PpuRenderer());
-            CentralBus bus = new CentralBus(cpu6502, ppu2c02);
+            IApu apu = new Apu();
+            CentralBus bus = new CentralBus(cpu6502, ppu2c02, apu);
             bus.AddCartridge(mockCartridge.Object);
             byte page = 0x02;
             ushort startAddress = (ushort)(page << 8);
